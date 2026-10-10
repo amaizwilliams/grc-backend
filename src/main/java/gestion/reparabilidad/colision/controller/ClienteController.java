@@ -1,6 +1,7 @@
 package gestion.reparabilidad.colision.controller;
 
 import gestion.reparabilidad.colision.dto.cliente.ClienteRequestDto;
+import gestion.reparabilidad.colision.dto.cliente.ClienteUpdateDto;
 import gestion.reparabilidad.colision.modelo.Cliente;
 import gestion.reparabilidad.colision.service.ClienteService;
 import jakarta.validation.Valid;
@@ -27,9 +28,19 @@ public class ClienteController {
                 .body(clienteService.saveCliente(request));
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<Cliente> actualizarCliente(@PathVariable Long id, @Valid @RequestBody ClienteUpdateDto datos){
+        return ResponseEntity.ok(clienteService.updateCliente(id, datos));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<Cliente> buscar(@PathVariable Long id) {
         return ResponseEntity.ok(clienteService.getClienteById(id));
+    }
+
+    @GetMapping("/documento/{documento}")
+    public ResponseEntity<Cliente> buscarPorDocumento(@PathVariable String documento){
+        return ResponseEntity.ok(clienteService.getClienteByDocumento(documento));
     }
 
     @GetMapping

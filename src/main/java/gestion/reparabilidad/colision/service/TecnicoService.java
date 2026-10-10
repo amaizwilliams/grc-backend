@@ -1,6 +1,7 @@
 package gestion.reparabilidad.colision.service;
 import gestion.reparabilidad.colision.dto.tecnico.TecnicoUpdateDto;
 import gestion.reparabilidad.colision.exception.RecursoNoEncontradoException;
+import gestion.reparabilidad.colision.exception.ReglaNegocioException;
 import gestion.reparabilidad.colision.modelo.Tecnico;
 import gestion.reparabilidad.colision.repository.TecnicoRepository;
 import gestion.reparabilidad.colision.dto.tecnico.TecnicoRequestDto;
@@ -32,8 +33,12 @@ public class TecnicoService {
     }
 
     public Tecnico saveTecnico(TecnicoRequestDto request) {
+        String documento = request.getDocumento().trim();
+        if(tecnicoRepository.existsByDocumento(documento)){
+            throw new ReglaNegocioException("Ya existe un técnico con el documento " + documento);
+        }
         Tecnico tecnico = new Tecnico();
-        tecnico.setDocumento(request.getDocumento().trim());
+        tecnico.setDocumento(documento);
         tecnico.setNombreCompleto(request.getNombreCompleto().trim());
         tecnico.setCelular(request.getCelular());
         tecnico.setCorreo(request.getCorreo());
