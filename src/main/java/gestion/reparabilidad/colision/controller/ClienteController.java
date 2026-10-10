@@ -32,6 +32,11 @@ public class ClienteController {
         return ResponseEntity.ok(clienteService.getClienteById(id));
     }
 
+    @GetMapping("/documento/{documento}")
+    public ResponseEntity<Cliente> buscarPorDocumento(@PathVariable String documento){
+        return ResponseEntity.ok(clienteService.getClienteByDocumento(documento));
+    }
+
     @GetMapping
     public ResponseEntity<List<Cliente>> listar() {
         return ResponseEntity.ok(clienteService.getAllCliente());

@@ -26,6 +26,11 @@ public class VehiculoController {
         return ResponseEntity.ok(vehiculoService.getVehiculoById(id));
     }
 
+    @GetMapping("/placa/{placa}")
+    public ResponseEntity<Vehiculo> buscarVehiculoPlaca(@PathVariable String placa){
+        return ResponseEntity.ok(vehiculoService.getVehiculoByPlaca(placa));
+    }
+
     @GetMapping
     public  ResponseEntity<List<Vehiculo>> listar(){
         return  ResponseEntity.ok(vehiculoService.getAllVehiculo());
@@ -47,6 +52,7 @@ public class VehiculoController {
         vehiculoService.deleteVehiculoById(id);
         return ResponseEntity.noContent().build();
     }
+
     @PatchMapping("/{id}/reactivar")
     public ResponseEntity<Vehiculo> reactivar(@PathVariable Long id){
         return ResponseEntity.ok(vehiculoService.reactivarVehiculo(id));

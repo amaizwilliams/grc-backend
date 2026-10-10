@@ -7,7 +7,6 @@ import gestion.reparabilidad.colision.modelo.Vehiculo;
 import gestion.reparabilidad.colision.repository.ClienteRepository;
 import gestion.reparabilidad.colision.repository.VehiculoRepository;
 import org.springframework.stereotype.Service;
-
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -45,6 +44,13 @@ public class VehiculoService {
     public Vehiculo getVehiculoById(Long id) {
         return vehiculoRepository.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe el vehículo con id " + id));
+    }
+
+    public Vehiculo getVehiculoByPlaca(String placa){
+        String placaNormalizada = placa.trim().toUpperCase();
+        return vehiculoRepository.findByPlaca(placaNormalizada)
+                .orElseThrow(() -> new RecursoNoEncontradoException(
+                        "No existe el vehículo con placa " + placaNormalizada));
     }
 
     public List<Vehiculo> getAllVehiculo() {
