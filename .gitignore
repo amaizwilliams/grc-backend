@@ -40,7 +40,3 @@ postman/
 # Variables de entorno locales
 .env
 
-
-#claude
-CLAUDE.md
-.claude/

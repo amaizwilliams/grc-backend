@@ -38,7 +38,7 @@ public class ClienteService {
     public Cliente getClienteByDocumento(String documento){
         String documentoNormalizado = documento.trim();
         return clienteRepository.findByDocumento(documentoNormalizado)
-                .orElseThrow(()-> new RecursoNoEncontradoException("No hay clientes registrados con este documento: "+documento));
+                .orElseThrow(()-> new RecursoNoEncontradoException("No hay clientes registrados con este documento: "+documentoNormalizado));
     }
 
     public List<Cliente> getAllCliente() {
