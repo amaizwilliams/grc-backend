@@ -1,9 +1,9 @@
 package gestion.reparabilidad.colision.service;
-import gestion.reparabilidad.colision.dto.TecnicoUpdateDto;
+import gestion.reparabilidad.colision.dto.tecnico.TecnicoUpdateDto;
 import gestion.reparabilidad.colision.exception.RecursoNoEncontradoException;
 import gestion.reparabilidad.colision.modelo.Tecnico;
 import gestion.reparabilidad.colision.repository.TecnicoRepository;
-import gestion.reparabilidad.colision.dto.TecnicoRequestDto;
+import gestion.reparabilidad.colision.dto.tecnico.TecnicoRequestDto;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 

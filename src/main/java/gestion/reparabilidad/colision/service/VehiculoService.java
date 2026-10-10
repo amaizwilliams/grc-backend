@@ -1,6 +1,6 @@
 package gestion.reparabilidad.colision.service;
 
-import gestion.reparabilidad.colision.dto.VehiculoRequestDto;
+import gestion.reparabilidad.colision.dto.vehiculo.VehiculoRequestDto;
 import gestion.reparabilidad.colision.exception.RecursoNoEncontradoException;
 import gestion.reparabilidad.colision.modelo.Cliente;
 import gestion.reparabilidad.colision.modelo.Vehiculo;

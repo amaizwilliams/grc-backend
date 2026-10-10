@@ -1,7 +1,6 @@
 package gestion.reparabilidad.colision.service;
-import gestion.reparabilidad.colision.dto.ClienteRequestDto;
+import gestion.reparabilidad.colision.dto.cliente.ClienteRequestDto;
 import gestion.reparabilidad.colision.modelo.Cliente;
-import gestion.reparabilidad.colision.modelo.Tecnico;
 import gestion.reparabilidad.colision.repository.ClienteRepository;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;

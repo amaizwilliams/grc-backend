@@ -1,4 +1,4 @@
-package gestion.reparabilidad.colision.dto;
+package gestion.reparabilidad.colision.dto.tecnico;
 
 import gestion.reparabilidad.colision.modelo.Enums.Especialidad;
 import jakarta.validation.constraints.*;

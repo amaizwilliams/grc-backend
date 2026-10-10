@@ -1,6 +1,6 @@
 package gestion.reparabilidad.colision.controller;
 
-import gestion.reparabilidad.colision.dto.ClienteRequestDto;
+import gestion.reparabilidad.colision.dto.cliente.ClienteRequestDto;
 import gestion.reparabilidad.colision.modelo.Cliente;
 import gestion.reparabilidad.colision.service.ClienteService;
 import jakarta.validation.Valid;

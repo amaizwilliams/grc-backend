@@ -34,14 +34,13 @@ build/
 .vscode/
 
 ## postman ##
-.postman
+.postman/
+postman/
 
 # Variables de entorno locales
 .env
 
 
-/pom.xml
-
 #claude
 CLAUDE.md
-.claude
+.claude/
