@@ -8,6 +8,9 @@ import java.util.Optional;
 
 @Repository
 public interface ClienteRepository extends JpaRepository<Cliente,Long> {
+
+    boolean existsByDocumento(String documento);
+
     List<Cliente> findByActivoTrue();
     List<Cliente> findByActivoFalse();
     Optional<Cliente> findByDocumento(String documento);

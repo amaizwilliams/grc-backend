@@ -29,11 +29,11 @@ public class TecnicoRequestDto {
     private String nombreCompleto;
 
     @NotBlank(message = "El celular es obligatorio")
-    @Pattern(regexp = "^\\+?[0-9 -]{10,20}$")
+    @Pattern(regexp = "^\\+?[0-9 -]{10,20}$", message = "El celular no tiene un formato válido")
     private String celular;
 
-    @Email
-    @Size(max = 100)
+    @Email(message = "El correo no tiene un formato válido")
+    @Size(max = 100, message = "El correo no puede superar 100 caracteres")
     private String correo;
 
     @NotNull(message = "La especialidad es obligatoria")

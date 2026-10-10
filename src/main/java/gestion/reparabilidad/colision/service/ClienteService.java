@@ -1,5 +1,7 @@
 package gestion.reparabilidad.colision.service;
 import gestion.reparabilidad.colision.dto.cliente.ClienteRequestDto;
+import gestion.reparabilidad.colision.dto.cliente.ClienteUpdateDto;
+import gestion.reparabilidad.colision.exception.ReglaNegocioException;
 import gestion.reparabilidad.colision.modelo.Cliente;
 import gestion.reparabilidad.colision.repository.ClienteRepository;
 import org.springframework.stereotype.Service;
@@ -18,8 +20,12 @@ public class ClienteService {
     }
 
     public Cliente saveCliente(ClienteRequestDto request){
+        String documento = request.getDocumento().trim();
+        if (clienteRepository.existsByDocumento(documento)) {
+            throw new ReglaNegocioException("Ya existe un cliente con el documento " + documento);
+        }
         Cliente cliente = new Cliente();
-        cliente.setDocumento(request.getDocumento().trim());
+        cliente.setDocumento(documento);
         cliente.setNombreCompleto(request.getNombreCompleto().trim());
         cliente.setCelular(request.getCelular());
         cliente.setCorreo(request.getCorreo());
@@ -27,6 +33,15 @@ public class ClienteService {
         cliente.setActivo(true);
         cliente.setCreateAt(ahora);
         cliente.setUpdateAt(ahora);
+        return clienteRepository.save(cliente);
+    }
+
+    public Cliente updateCliente(Long id, ClienteUpdateDto datos){
+        Cliente cliente = getClienteById(id);
+        cliente.setNombreCompleto(datos.getNombreCompleto().trim());
+        cliente.setCelular(datos.getCelular());
+        cliente.setCorreo(datos.getCorreo());
+        cliente.setUpdateAt(LocalDateTime.now());
         return clienteRepository.save(cliente);
     }
 

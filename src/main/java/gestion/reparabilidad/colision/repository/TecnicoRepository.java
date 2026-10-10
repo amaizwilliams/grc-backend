@@ -7,6 +7,9 @@ import java.util.List;
 
 @Repository
 public interface TecnicoRepository extends JpaRepository<Tecnico, Long> {
+
+    boolean existsByDocumento(String documento);
+
     List<Tecnico> findByActivoTrue();
     List<Tecnico> findByActivoFalse();
 }

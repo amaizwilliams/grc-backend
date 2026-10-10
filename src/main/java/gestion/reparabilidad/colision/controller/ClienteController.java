@@ -1,6 +1,7 @@
 package gestion.reparabilidad.colision.controller;
 
 import gestion.reparabilidad.colision.dto.cliente.ClienteRequestDto;
+import gestion.reparabilidad.colision.dto.cliente.ClienteUpdateDto;
 import gestion.reparabilidad.colision.modelo.Cliente;
 import gestion.reparabilidad.colision.service.ClienteService;
 import jakarta.validation.Valid;
@@ -11,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-    @RequestMapping("/api/cliente")
+@RequestMapping("/api/cliente")
 @CrossOrigin(origins = "*")
 public class ClienteController {
 
@@ -25,6 +26,11 @@ public class ClienteController {
     public ResponseEntity<Cliente> crearCliente(@Valid @RequestBody ClienteRequestDto request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(clienteService.saveCliente(request));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Cliente> actualizarCliente(@PathVariable Long id, @Valid @RequestBody ClienteUpdateDto datos){
+        return ResponseEntity.ok(clienteService.updateCliente(id, datos));
     }
 
     @GetMapping("/{id}")
