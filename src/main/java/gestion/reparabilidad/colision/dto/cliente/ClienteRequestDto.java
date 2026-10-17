@@ -19,7 +19,8 @@ public class ClienteRequestDto {
     private String nombreCompleto;
 
     @NotBlank(message = "El celular es obligatorio")
-    @Pattern(regexp = "^\\+?[0-9 -]{10,20}$", message = "El celular no tiene un formato válido")
+    @Pattern(regexp = "^(?=(?:\\D*\\d){10,15}\\D*$)\\+?\\d[\\d -]*\\d$",
+            message = "El celular debe tener entre 10 y 15 dígitos (ej: 3001112233 o +57 300 111 2233)")
     private String celular;
 
     @Email(message = "El correo no tiene un formato válido")
