@@ -67,6 +67,18 @@ public class GlobalExceptionHandler {
                 .body(Map.of("error", e.getMessage()));
     }
 
+    @ExceptionHandler(CredencialesInvalidasException.class)
+    public ResponseEntity<Map<String, String>> manejarCredencialesInvalidas(CredencialesInvalidasException e) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(Map.of("error", e.getMessage()));
+    }
+
+    @ExceptionHandler(UsuarioInactivoException.class)
+    public ResponseEntity<Map<String, String>> manejarUsuarioInactivo(UsuarioInactivoException e) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(Map.of("error", e.getMessage()));
+    }
+
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, String>> manejarIntegridadDatos(DataIntegrityViolationException e) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
