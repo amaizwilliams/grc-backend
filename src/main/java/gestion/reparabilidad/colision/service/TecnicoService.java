@@ -21,7 +21,7 @@ public class TecnicoService {
     }
 
     public List<Tecnico> getAllTecnico() {
-        return tecnicoRepository.findByActivoTrue();
+        return tecnicoRepository.findAll();
     }
 
     public List<Tecnico> getAllTecnicoDesactivado() {

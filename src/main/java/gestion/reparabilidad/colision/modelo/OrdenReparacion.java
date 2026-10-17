@@ -32,11 +32,7 @@ public class OrdenReparacion {
     private Usuario usuarioCreador;
 
     @ManyToOne
-    @JoinColumn(name = "id_tecnico_responsable", referencedColumnName = "id_persona")
-    private Tecnico tecnicoResponsable;
-
-    @ManyToOne
-    @JoinColumn(name = "id_etapa_actual", referencedColumnName = "id_etapa", nullable = false)
+    @JoinColumn(name = "id_etapa_actual", referencedColumnName = "id_etapa")
     private Etapas etapaActual;
 
     @Enumerated(EnumType.STRING)
@@ -44,7 +40,7 @@ public class OrdenReparacion {
     @Column(name = "estado", length = 20, nullable = false)
     private Estado estado = Estado.ACTIVA;
 
-    @Column(name = "fecha_ingreso_cotizar", nullable = false)
+    @Column(name = "fecha_ingreso_cotizar")
     private LocalDate fechaIngresoCotizar;
 
     @Column(name = "fecha_ingreso_reparacion")
@@ -74,12 +70,11 @@ public class OrdenReparacion {
     @OneToOne(mappedBy = "ordenReparacion")
     private Valoracion valoracion;
 
-    public OrdenReparacion(Long idOrdenReparacion, Vehiculo vehiculo, Cliente cliente, Usuario usuarioCreador, Tecnico tecnicoResponsable, Etapas etapaActual, Estado estado, LocalDate fechaIngresoCotizar, LocalDate fechaIngresoReparacion, LocalDate fechaDeEntregaEstimada, LocalDate fechaDeEntregaReal, Byte diasEstimadoEntrega, LocalDateTime createAt, LocalDateTime updateAt, List<HistorialEtapas> historialEtapas, List<OrdenEtapaFecha> ordenEtapaFechas, Valoracion valoracion) {
+    public OrdenReparacion(Long idOrdenReparacion, Vehiculo vehiculo, Cliente cliente, Usuario usuarioCreador, Etapas etapaActual, Estado estado, LocalDate fechaIngresoCotizar, LocalDate fechaIngresoReparacion, LocalDate fechaDeEntregaEstimada, LocalDate fechaDeEntregaReal, Byte diasEstimadoEntrega, LocalDateTime createAt, LocalDateTime updateAt, List<HistorialEtapas> historialEtapas, List<OrdenEtapaFecha> ordenEtapaFechas, Valoracion valoracion) {
         this.idOrdenReparacion = idOrdenReparacion;
         this.vehiculo = vehiculo;
         this.cliente = cliente;
         this.usuarioCreador = usuarioCreador;
-        this.tecnicoResponsable = tecnicoResponsable;
         this.etapaActual = etapaActual;
         this.estado = estado;
         this.fechaIngresoCotizar = fechaIngresoCotizar;
@@ -127,14 +122,6 @@ public class OrdenReparacion {
 
     public void setUsuarioCreador(Usuario usuarioCreador) {
         this.usuarioCreador = usuarioCreador;
-    }
-
-    public Tecnico getTecnicoResponsable() {
-        return tecnicoResponsable;
-    }
-
-    public void setTecnicoResponsable(Tecnico tecnicoResponsable) {
-        this.tecnicoResponsable = tecnicoResponsable;
     }
 
     public Etapas getEtapaActual() {
