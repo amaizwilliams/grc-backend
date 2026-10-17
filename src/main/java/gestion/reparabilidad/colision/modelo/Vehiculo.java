@@ -34,7 +34,7 @@ public class Vehiculo {
     @Column(name = "modelo", length = 10, nullable = false)
     private String modelo;
 
-    @Column(name = "anio", nullable = false)
+    @Column(name = "anio")
     private Short anio;
 
     @Column(name = "color", length = 50)

@@ -4,6 +4,7 @@ import gestion.reparabilidad.colision.dto.cliente.ClienteUpdateDto;
 import gestion.reparabilidad.colision.exception.ReglaNegocioException;
 import gestion.reparabilidad.colision.modelo.Cliente;
 import gestion.reparabilidad.colision.repository.ClienteRepository;
+import gestion.reparabilidad.colision.util.CelularUtil;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -27,7 +28,7 @@ public class ClienteService {
         Cliente cliente = new Cliente();
         cliente.setDocumento(documento);
         cliente.setNombreCompleto(request.getNombreCompleto().trim());
-        cliente.setCelular(request.getCelular());
+        cliente.setCelular(CelularUtil.normalizar(request.getCelular()));
         cliente.setCorreo(request.getCorreo());
         LocalDateTime ahora = LocalDateTime.now();
         cliente.setActivo(true);
@@ -39,7 +40,7 @@ public class ClienteService {
     public Cliente updateCliente(Long id, ClienteUpdateDto datos){
         Cliente cliente = getClienteById(id);
         cliente.setNombreCompleto(datos.getNombreCompleto().trim());
-        cliente.setCelular(datos.getCelular());
+        cliente.setCelular(CelularUtil.normalizar(datos.getCelular()));
         cliente.setCorreo(datos.getCorreo());
         cliente.setUpdateAt(LocalDateTime.now());
         return clienteRepository.save(cliente);

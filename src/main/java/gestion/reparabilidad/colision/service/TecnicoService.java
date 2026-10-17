@@ -5,6 +5,7 @@ import gestion.reparabilidad.colision.exception.ReglaNegocioException;
 import gestion.reparabilidad.colision.modelo.Tecnico;
 import gestion.reparabilidad.colision.repository.TecnicoRepository;
 import gestion.reparabilidad.colision.dto.tecnico.TecnicoRequestDto;
+import gestion.reparabilidad.colision.util.CelularUtil;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 
@@ -40,7 +41,7 @@ public class TecnicoService {
         Tecnico tecnico = new Tecnico();
         tecnico.setDocumento(documento);
         tecnico.setNombreCompleto(request.getNombreCompleto().trim());
-        tecnico.setCelular(request.getCelular());
+        tecnico.setCelular(CelularUtil.normalizar(request.getCelular()));
         tecnico.setCorreo(request.getCorreo());
         tecnico.setEspecialidad(request.getEspecialidad());
         LocalDateTime ahora = LocalDateTime.now();
@@ -52,8 +53,8 @@ public class TecnicoService {
 
     public Tecnico updateTecnico(Long id ,TecnicoUpdateDto datos) {
         Tecnico tecnico = getTecnicoById(id);
-        tecnico.setNombreCompleto(datos.getNombreCompleto());
-        tecnico.setCelular(datos.getCelular());
+        tecnico.setNombreCompleto(datos.getNombreCompleto().trim());
+        tecnico.setCelular(CelularUtil.normalizar(datos.getCelular()));
         tecnico.setCorreo(datos.getCorreo());
         tecnico.setEspecialidad(datos.getEspecialidad());
         tecnico.setUpdateAt(LocalDateTime.now());
