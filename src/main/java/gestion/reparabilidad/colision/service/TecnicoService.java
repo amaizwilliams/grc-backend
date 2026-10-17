@@ -34,16 +34,16 @@ public class TecnicoService {
     }
 
     public Tecnico saveTecnico(TecnicoRequestDto request) {
-        String documento = request.getDocumento().trim();
+        String documento = request.documento().trim();
         if(tecnicoRepository.existsByDocumento(documento)){
             throw new ReglaNegocioException("Ya existe un técnico con el documento " + documento);
         }
         Tecnico tecnico = new Tecnico();
         tecnico.setDocumento(documento);
-        tecnico.setNombreCompleto(request.getNombreCompleto().trim());
-        tecnico.setCelular(CelularUtil.normalizar(request.getCelular()));
-        tecnico.setCorreo(request.getCorreo());
-        tecnico.setEspecialidad(request.getEspecialidad());
+        tecnico.setNombreCompleto(request.nombreCompleto().trim());
+        tecnico.setCelular(CelularUtil.normalizar(request.celular()));
+        tecnico.setCorreo(request.correo());
+        tecnico.setEspecialidad(request.especialidad());
         tecnico.setActivo(true);
         tecnico.setCreateAt(LocalDateTime.now());
         return tecnicoRepository.save(tecnico);
