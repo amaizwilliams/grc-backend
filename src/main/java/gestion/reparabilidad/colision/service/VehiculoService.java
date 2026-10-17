@@ -34,10 +34,8 @@ public class VehiculoService {
         vehiculo.setAnio(request.getAnio());
         vehiculo.setColor(request.getColor());
         vehiculo.setVin(request.getVin());
-        LocalDateTime ahora = LocalDateTime.now();
         vehiculo.setActivo(true);
-        vehiculo.setCreateAt(ahora);
-        vehiculo.setUpdateAt(ahora);
+        vehiculo.setCreateAt(LocalDateTime.now());
         return vehiculoRepository.save(vehiculo);
     }
 

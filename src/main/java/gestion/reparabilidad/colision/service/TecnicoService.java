@@ -44,10 +44,8 @@ public class TecnicoService {
         tecnico.setCelular(CelularUtil.normalizar(request.getCelular()));
         tecnico.setCorreo(request.getCorreo());
         tecnico.setEspecialidad(request.getEspecialidad());
-        LocalDateTime ahora = LocalDateTime.now();
         tecnico.setActivo(true);
-        tecnico.setCreateAt(ahora);
-        tecnico.setUpdateAt(ahora);
+        tecnico.setCreateAt(LocalDateTime.now());
         return tecnicoRepository.save(tecnico);
     }
 

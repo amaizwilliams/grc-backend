@@ -24,7 +24,7 @@ public class Cliente extends Persona {
     @Column(name = "create_at", nullable = false)
     private LocalDateTime createAt;
 
-    @Column(name = "update_at", nullable = false)
+    @Column(name = "update_at")
     private LocalDateTime updateAt;
 
     @JsonIgnore

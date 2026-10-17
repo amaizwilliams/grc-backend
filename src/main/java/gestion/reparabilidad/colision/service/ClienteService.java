@@ -30,10 +30,8 @@ public class ClienteService {
         cliente.setNombreCompleto(request.getNombreCompleto().trim());
         cliente.setCelular(CelularUtil.normalizar(request.getCelular()));
         cliente.setCorreo(request.getCorreo());
-        LocalDateTime ahora = LocalDateTime.now();
         cliente.setActivo(true);
-        cliente.setCreateAt(ahora);
-        cliente.setUpdateAt(ahora);
+        cliente.setCreateAt(LocalDateTime.now());
         return clienteRepository.save(cliente);
     }
 
