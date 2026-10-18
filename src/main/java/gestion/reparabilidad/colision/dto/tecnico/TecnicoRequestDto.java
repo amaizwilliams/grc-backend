@@ -6,7 +6,8 @@ import jakarta.validation.constraints.*;
 public record TecnicoRequestDto(
 
         @NotBlank(message = "El documento es obligatorio")
-        @Pattern(regexp = "^\\d{6,10}$", message = "El documento debe tener solo números, entre 6 y 10 dígitos")
+        @Pattern(regexp = "^\\s*(?=(?:[^0-9]*[0-9]){6,10}[^0-9]*$)[0-9]+(?:[ .][0-9]+)*\\s*$",
+                message = "El documento debe tener entre 6 y 10 dígitos (ej: 1017171717 o 1.017.171.717)")
         String documento,
 
         @NotBlank(message = "El nombre es obligatorio")

@@ -6,6 +6,7 @@ import gestion.reparabilidad.colision.exception.ReglaNegocioException;
 import gestion.reparabilidad.colision.modelo.Cliente;
 import gestion.reparabilidad.colision.repository.ClienteRepository;
 import gestion.reparabilidad.colision.util.CelularUtil;
+import gestion.reparabilidad.colision.util.DocumentoUtil;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,7 +23,7 @@ public class ClienteService {
     }
 
     public ClienteResponseDto saveCliente(ClienteRequestDto request){
-        String documento = request.documento().trim();
+        String documento = DocumentoUtil.normalizar(request.documento());
         if (clienteRepository.existsByDocumento(documento)) {
             throw new ReglaNegocioException("Ya existe un cliente con el documento " + documento);
         }
@@ -50,7 +51,7 @@ public class ClienteService {
     }
 
     public ClienteResponseDto getClienteByDocumento(String documento){
-        String documentoNormalizado = documento.trim();
+        String documentoNormalizado = DocumentoUtil.normalizar(documento);
         return clienteRepository.findByDocumento(documentoNormalizado)
                 .map(this::convertirADto)
                 .orElseThrow(()-> new RecursoNoEncontradoException("No hay clientes registrados con este documento: "+documentoNormalizado));

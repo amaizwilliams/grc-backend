@@ -7,6 +7,7 @@ import gestion.reparabilidad.colision.modelo.Tecnico;
 import gestion.reparabilidad.colision.repository.TecnicoRepository;
 import gestion.reparabilidad.colision.dto.tecnico.TecnicoRequestDto;
 import gestion.reparabilidad.colision.util.CelularUtil;
+import gestion.reparabilidad.colision.util.DocumentoUtil;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 
@@ -34,7 +35,7 @@ public class TecnicoService {
     }
 
     public TecnicoResponseDto saveTecnico(TecnicoRequestDto request) {
-        String documento = request.documento().trim();
+        String documento = DocumentoUtil.normalizar(request.documento());
         if(tecnicoRepository.existsByDocumento(documento)){
             throw new ReglaNegocioException("Ya existe un técnico con el documento " + documento);
         }

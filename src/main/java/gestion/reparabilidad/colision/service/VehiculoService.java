@@ -6,6 +6,7 @@ import gestion.reparabilidad.colision.exception.RecursoNoEncontradoException;
 import gestion.reparabilidad.colision.modelo.Cliente;
 import gestion.reparabilidad.colision.modelo.Vehiculo;
 import gestion.reparabilidad.colision.repository.VehiculoRepository;
+import gestion.reparabilidad.colision.util.PlacaUtil;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,7 +27,7 @@ public class VehiculoService {
         Cliente cliente = clienteService.buscarCliente(request.idCliente());
         Vehiculo vehiculo = new Vehiculo();
         vehiculo.setCliente(cliente);
-        vehiculo.setPlaca(request.placa().trim().toUpperCase());
+        vehiculo.setPlaca(PlacaUtil.normalizar(request.placa()));
         vehiculo.setMarca(request.marca().trim());
         vehiculo.setModelo(request.modelo().trim());
         vehiculo.setAnio(request.anio());
@@ -42,7 +43,7 @@ public class VehiculoService {
     }
 
     public VehiculoResponseDto getVehiculoByPlaca(String placa){
-        String placaNormalizada = placa.trim().toUpperCase();
+        String placaNormalizada = PlacaUtil.normalizar(placa);
         return vehiculoRepository.findByPlaca(placaNormalizada)
                 .map(this::convertirADto)
                 .orElseThrow(() -> new RecursoNoEncontradoException(
@@ -71,12 +72,12 @@ public class VehiculoService {
         return convertirADto(vehiculoRepository.save(vehiculo));
     }
 
-    private Vehiculo buscarVehiculo(Long id) {
+    public Vehiculo buscarVehiculo(Long id) {
         return vehiculoRepository.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe el vehículo con id " + id));
     }
 
-    private VehiculoResponseDto convertirADto(Vehiculo vehiculo) {
+    public VehiculoResponseDto convertirADto(Vehiculo vehiculo) {
         return new VehiculoResponseDto(
                 vehiculo.getIdVehiculo(),
                 clienteService.convertirADto(vehiculo.getCliente()),

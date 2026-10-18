@@ -1,7 +1,11 @@
 package gestion.reparabilidad.colision.modelo;
 
 import gestion.reparabilidad.colision.modelo.Enums.Estado;
+import gestion.reparabilidad.colision.modelo.Enums.Ubicacion;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -9,6 +13,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+
+@Getter
+@Setter
+@NoArgsConstructor
 
 @Entity
 @Table(name = "orden_reparacion")
@@ -70,153 +78,10 @@ public class OrdenReparacion {
     @OneToOne(mappedBy = "ordenReparacion")
     private Valoracion valoracion;
 
-    public OrdenReparacion(Long idOrdenReparacion, Vehiculo vehiculo, Cliente cliente, Usuario usuarioCreador, Etapas etapaActual, Estado estado, LocalDate fechaIngresoCotizar, LocalDate fechaIngresoReparacion, LocalDate fechaDeEntregaEstimada, LocalDate fechaDeEntregaReal, Byte diasEstimadoEntrega, LocalDateTime createAt, LocalDateTime updateAt, List<HistorialEtapas> historialEtapas, List<OrdenEtapaFecha> ordenEtapaFechas, Valoracion valoracion) {
-        this.idOrdenReparacion = idOrdenReparacion;
-        this.vehiculo = vehiculo;
-        this.cliente = cliente;
-        this.usuarioCreador = usuarioCreador;
-        this.etapaActual = etapaActual;
-        this.estado = estado;
-        this.fechaIngresoCotizar = fechaIngresoCotizar;
-        this.fechaIngresoReparacion = fechaIngresoReparacion;
-        this.fechaDeEntregaEstimada = fechaDeEntregaEstimada;
-        this.fechaDeEntregaReal = fechaDeEntregaReal;
-        this.diasEstimadoEntrega = diasEstimadoEntrega;
-        this.createAt = createAt;
-        this.updateAt = updateAt;
-        this.historialEtapas = historialEtapas;
-        this.ordenEtapaFechas = ordenEtapaFechas;
-        this.valoracion = valoracion;
-    }
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(name = "ubicacion_actual", length = 20)
+    private Ubicacion ubicacionActual;
 
-    public OrdenReparacion() {
-    }
 
-    public Long getIdOrdenReparacion() {
-        return idOrdenReparacion;
-    }
-
-    public void setIdOrdenReparacion(Long idOrdenReparacion) {
-        this.idOrdenReparacion = idOrdenReparacion;
-    }
-
-    public Vehiculo getVehiculo() {
-        return vehiculo;
-    }
-
-    public void setVehiculo(Vehiculo vehiculo) {
-        this.vehiculo = vehiculo;
-    }
-
-    public Cliente getCliente() {
-        return cliente;
-    }
-
-    public void setCliente(Cliente cliente) {
-        this.cliente = cliente;
-    }
-
-    public Usuario getUsuarioCreador() {
-        return usuarioCreador;
-    }
-
-    public void setUsuarioCreador(Usuario usuarioCreador) {
-        this.usuarioCreador = usuarioCreador;
-    }
-
-    public Etapas getEtapaActual() {
-        return etapaActual;
-    }
-
-    public void setEtapaActual(Etapas etapaActual) {
-        this.etapaActual = etapaActual;
-    }
-
-    public Estado getEstado() {
-        return estado;
-    }
-
-    public void setEstado(Estado estado) {
-        this.estado = estado;
-    }
-
-    public LocalDate getFechaIngresoCotizar() {
-        return fechaIngresoCotizar;
-    }
-
-    public void setFechaIngresoCotizar(LocalDate fechaIngresoCotizar) {
-        this.fechaIngresoCotizar = fechaIngresoCotizar;
-    }
-
-    public LocalDate getFechaIngresoReparacion() {
-        return fechaIngresoReparacion;
-    }
-
-    public void setFechaIngresoReparacion(LocalDate fechaIngresoReparacion) {
-        this.fechaIngresoReparacion = fechaIngresoReparacion;
-    }
-
-    public LocalDate getFechaDeEntregaEstimada() {
-        return fechaDeEntregaEstimada;
-    }
-
-    public void setFechaDeEntregaEstimada(LocalDate fechaDeEntregaEstimada) {
-        this.fechaDeEntregaEstimada = fechaDeEntregaEstimada;
-    }
-
-    public LocalDate getFechaDeEntregaReal() {
-        return fechaDeEntregaReal;
-    }
-
-    public void setFechaDeEntregaReal(LocalDate fechaDeEntregaReal) {
-        this.fechaDeEntregaReal = fechaDeEntregaReal;
-    }
-
-    public Byte getDiasEstimadoEntrega() {
-        return diasEstimadoEntrega;
-    }
-
-    public void setDiasEstimadoEntrega(Byte diasEstimadoEntrega) {
-        this.diasEstimadoEntrega = diasEstimadoEntrega;
-    }
-
-    public LocalDateTime getCreateAt() {
-        return createAt;
-    }
-
-    public void setCreateAt(LocalDateTime createAt) {
-        this.createAt = createAt;
-    }
-
-    public LocalDateTime getUpdateAt() {
-        return updateAt;
-    }
-
-    public void setUpdateAt(LocalDateTime updateAt) {
-        this.updateAt = updateAt;
-    }
-
-    public List<HistorialEtapas> getHistorialEtapas() {
-        return historialEtapas;
-    }
-
-    public void setHistorialEtapas(List<HistorialEtapas> historialEtapas) {
-        this.historialEtapas = historialEtapas;
-    }
-
-    public List<OrdenEtapaFecha> getOrdenEtapaFechas() {
-        return ordenEtapaFechas;
-    }
-
-    public void setOrdenEtapaFechas(List<OrdenEtapaFecha> ordenEtapaFechas) {
-        this.ordenEtapaFechas = ordenEtapaFechas;
-    }
-
-    public Valoracion getValoracion() {
-        return valoracion;
-    }
-
-    public void setValoracion(Valoracion valoracion) {
-        this.valoracion = valoracion;
-    }
 }

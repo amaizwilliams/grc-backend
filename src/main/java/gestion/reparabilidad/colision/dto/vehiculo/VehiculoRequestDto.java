@@ -11,7 +11,7 @@ public record VehiculoRequestDto(
         Long idCliente,
 
         @NotBlank(message = "La placa es obligatoria")
-        @Pattern(regexp = "^[A-Za-z]{3}[0-9]{2}[0-9A-Za-z]$", message = "Placa inválida (ej: ABC123 o ABC12D)")
+        @Pattern(regexp = "^\\s*[A-Za-z]{3}[ -]?[0-9]{2}[0-9A-Za-z]\\s*$", message = "Placa inválida (ej: ABC123, ABC 123, ABC-123 o ABC12D)")
         String placa,
 
         @NotBlank(message = "La marca es obligatoria")
