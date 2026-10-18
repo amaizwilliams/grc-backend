@@ -1,6 +1,13 @@
 package gestion.reparabilidad.colision.modelo;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor
 
 @Entity
 @Table(name = "etapas")
@@ -20,49 +27,4 @@ public class Etapas {
     @Column(name = "descripcion", length = 255)
     private String descripcion;
 
-    //constructores
-
-    public Etapas(Long idEtapa, String nombre, Integer orden, String descripcion) {
-        this.idEtapa = idEtapa;
-        this.nombre = nombre;
-        this.orden = orden;
-        this.descripcion = descripcion;
-    }
-
-    public Etapas() {
-    }
-
-    //getters and setters
-
-    public Long getIdEtapa() {
-        return idEtapa;
-    }
-
-    public void setIdEtapa(Long idEtapa) {
-        this.idEtapa = idEtapa;
-    }
-
-    public String getNombre() {
-        return nombre;
-    }
-
-    public void setNombre(String nombre) {
-        this.nombre = nombre;
-    }
-
-    public Integer getOrden() {
-        return orden;
-    }
-
-    public void setOrden(Integer orden) {
-        this.orden = orden;
-    }
-
-    public String getDescripcion() {
-        return descripcion;
-    }
-
-    public void setDescripcion(String descripcion) {
-        this.descripcion = descripcion;
-    }
 }

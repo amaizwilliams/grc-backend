@@ -1,4 +1,5 @@
 package gestion.reparabilidad.colision.service;
+import gestion.reparabilidad.colision.dto.tecnico.TecnicoResponseDto;
 import gestion.reparabilidad.colision.dto.tecnico.TecnicoUpdateDto;
 import gestion.reparabilidad.colision.exception.RecursoNoEncontradoException;
 import gestion.reparabilidad.colision.exception.ReglaNegocioException;
@@ -6,6 +7,7 @@ import gestion.reparabilidad.colision.modelo.Tecnico;
 import gestion.reparabilidad.colision.repository.TecnicoRepository;
 import gestion.reparabilidad.colision.dto.tecnico.TecnicoRequestDto;
 import gestion.reparabilidad.colision.util.CelularUtil;
+import gestion.reparabilidad.colision.util.DocumentoUtil;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 
@@ -20,58 +22,75 @@ public class TecnicoService {
         this.tecnicoRepository = tecnicoRepository;
     }
 
-    public List<Tecnico> getAllTecnico() {
-        return tecnicoRepository.findAll();
+    public List<TecnicoResponseDto> getAllTecnico() {
+        return tecnicoRepository.findByActivoTrue().stream().map(this::convertirADto).toList();
     }
 
-    public List<Tecnico> getAllTecnicoDesactivado() {
-        return tecnicoRepository.findByActivoFalse();
+    public List<TecnicoResponseDto> getAllTecnicoDesactivado() {
+        return tecnicoRepository.findByActivoFalse().stream().map(this::convertirADto).toList();
     }
 
-    public Tecnico getTecnicoById(Long id) {
-        return tecnicoRepository.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe el técnico con id " + id));
+    public TecnicoResponseDto getTecnicoById(Long id) {
+        return convertirADto(buscarTecnico(id));
     }
 
-    public Tecnico saveTecnico(TecnicoRequestDto request) {
-        String documento = request.getDocumento().trim();
+    public TecnicoResponseDto saveTecnico(TecnicoRequestDto request) {
+        String documento = DocumentoUtil.normalizar(request.documento());
         if(tecnicoRepository.existsByDocumento(documento)){
             throw new ReglaNegocioException("Ya existe un técnico con el documento " + documento);
         }
         Tecnico tecnico = new Tecnico();
         tecnico.setDocumento(documento);
-        tecnico.setNombreCompleto(request.getNombreCompleto().trim());
-        tecnico.setCelular(CelularUtil.normalizar(request.getCelular()));
-        tecnico.setCorreo(request.getCorreo());
-        tecnico.setEspecialidad(request.getEspecialidad());
+        tecnico.setNombreCompleto(request.nombreCompleto().trim());
+        tecnico.setCelular(CelularUtil.normalizar(request.celular()));
+        tecnico.setCorreo(request.correo());
+        tecnico.setEspecialidad(request.especialidad());
         tecnico.setActivo(true);
         tecnico.setCreateAt(LocalDateTime.now());
-        return tecnicoRepository.save(tecnico);
+        return convertirADto(tecnicoRepository.save(tecnico));
     }
 
-    public Tecnico updateTecnico(Long id ,TecnicoUpdateDto datos) {
-        Tecnico tecnico = getTecnicoById(id);
-        tecnico.setNombreCompleto(datos.getNombreCompleto().trim());
-        tecnico.setCelular(CelularUtil.normalizar(datos.getCelular()));
-        tecnico.setCorreo(datos.getCorreo());
-        tecnico.setEspecialidad(datos.getEspecialidad());
+    public TecnicoResponseDto updateTecnico(Long id ,TecnicoUpdateDto datos) {
+        Tecnico tecnico = buscarTecnico(id);
+        tecnico.setNombreCompleto(datos.nombreCompleto().trim());
+        tecnico.setCelular(CelularUtil.normalizar(datos.celular()));
+        tecnico.setCorreo(datos.correo());
+        tecnico.setEspecialidad(datos.especialidad());
         tecnico.setUpdateAt(LocalDateTime.now());
-        return tecnicoRepository.save(tecnico);
+        return convertirADto(tecnicoRepository.save(tecnico));
     }
 
     public void deleteTecnicoById(Long id) {
-        Tecnico tecnico = getTecnicoById(id);
+        Tecnico tecnico = buscarTecnico(id);
         tecnico.setActivo(false);
         tecnico.setUpdateAt(LocalDateTime.now());
         tecnicoRepository.save(tecnico);
     }
 
-    public Tecnico reactivarTecnico(Long id){
-        Tecnico tecnico = getTecnicoById(id);
+    public TecnicoResponseDto reactivarTecnico(Long id){
+        Tecnico tecnico = buscarTecnico(id);
         tecnico.setActivo(true);
         tecnico.setUpdateAt(LocalDateTime.now());
-        return tecnicoRepository.save(tecnico);
+        return convertirADto(tecnicoRepository.save(tecnico));
     }
 
+    private Tecnico buscarTecnico(Long id) {
+        return tecnicoRepository.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe el técnico con id " + id));
+    }
+
+    private TecnicoResponseDto convertirADto(Tecnico tecnico) {
+        return new TecnicoResponseDto(
+                tecnico.getIdPersona(),
+                tecnico.getDocumento(),
+                tecnico.getNombreCompleto(),
+                tecnico.getCelular(),
+                tecnico.getCorreo(),
+                tecnico.getEspecialidad(),
+                tecnico.getActivo(),
+                tecnico.getCreateAt(),
+                tecnico.getUpdateAt()
+        );
+    }
 
 }
