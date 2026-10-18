@@ -1,5 +1,6 @@
 package gestion.reparabilidad.colision.service;
 import gestion.reparabilidad.colision.dto.cliente.ClienteRequestDto;
+import gestion.reparabilidad.colision.dto.cliente.ClienteResponseDto;
 import gestion.reparabilidad.colision.dto.cliente.ClienteUpdateDto;
 import gestion.reparabilidad.colision.exception.ReglaNegocioException;
 import gestion.reparabilidad.colision.modelo.Cliente;
@@ -20,61 +21,80 @@ public class ClienteService {
         this.clienteRepository = clienteRepository;
     }
 
-    public Cliente saveCliente(ClienteRequestDto request){
-        String documento = request.getDocumento().trim();
+    public ClienteResponseDto saveCliente(ClienteRequestDto request){
+        String documento = request.documento().trim();
         if (clienteRepository.existsByDocumento(documento)) {
             throw new ReglaNegocioException("Ya existe un cliente con el documento " + documento);
         }
         Cliente cliente = new Cliente();
         cliente.setDocumento(documento);
-        cliente.setNombreCompleto(request.getNombreCompleto().trim());
-        cliente.setCelular(CelularUtil.normalizar(request.getCelular()));
-        cliente.setCorreo(request.getCorreo());
+        cliente.setNombreCompleto(request.nombreCompleto().trim());
+        cliente.setCelular(CelularUtil.normalizar(request.celular()));
+        cliente.setCorreo(request.correo());
         cliente.setActivo(true);
         cliente.setCreateAt(LocalDateTime.now());
-        return clienteRepository.save(cliente);
+        return convertirADto(clienteRepository.save(cliente));
     }
 
-    public Cliente updateCliente(Long id, ClienteUpdateDto datos){
-        Cliente cliente = getClienteById(id);
-        cliente.setNombreCompleto(datos.getNombreCompleto().trim());
-        cliente.setCelular(CelularUtil.normalizar(datos.getCelular()));
-        cliente.setCorreo(datos.getCorreo());
+    public ClienteResponseDto updateCliente(Long id, ClienteUpdateDto datos){
+        Cliente cliente = buscarCliente(id);
+        cliente.setNombreCompleto(datos.nombreCompleto().trim());
+        cliente.setCelular(CelularUtil.normalizar(datos.celular()));
+        cliente.setCorreo(datos.correo());
         cliente.setUpdateAt(LocalDateTime.now());
-        return clienteRepository.save(cliente);
+        return convertirADto(clienteRepository.save(cliente));
     }
 
-    public Cliente getClienteById(Long id) {
-        return clienteRepository.findById(id)
-                .orElseThrow(() -> new RecursoNoEncontradoException("No existe el cliente con id " + id));
+    public ClienteResponseDto getClienteById(Long id) {
+        return convertirADto(buscarCliente(id));
     }
 
-    public Cliente getClienteByDocumento(String documento){
+    public ClienteResponseDto getClienteByDocumento(String documento){
         String documentoNormalizado = documento.trim();
         return clienteRepository.findByDocumento(documentoNormalizado)
+                .map(this::convertirADto)
                 .orElseThrow(()-> new RecursoNoEncontradoException("No hay clientes registrados con este documento: "+documentoNormalizado));
     }
 
-    public List<Cliente> getAllCliente() {
-        return clienteRepository.findByActivoTrue();
+    public List<ClienteResponseDto> getAllCliente() {
+        return clienteRepository.findByActivoTrue().stream().map(this::convertirADto).toList();
     }
 
-    public List<Cliente> getAllClienteDesactivado() {
-        return clienteRepository.findByActivoFalse();
+    public List<ClienteResponseDto> getAllClienteDesactivado() {
+        return clienteRepository.findByActivoFalse().stream().map(this::convertirADto).toList();
     }
 
     public void deleteClienteById(Long id) {
-        Cliente cliente = getClienteById(id);
+        Cliente cliente = buscarCliente(id);
         cliente.setActivo(false);
         cliente.setUpdateAt(LocalDateTime.now());
         clienteRepository.save(cliente);
     }
 
-    public Cliente reactivarCliente(Long id){
-        Cliente cliente = getClienteById(id);
+    public ClienteResponseDto reactivarCliente(Long id){
+        Cliente cliente = buscarCliente(id);
         cliente.setActivo(true);
         cliente.setUpdateAt(LocalDateTime.now());
-        return clienteRepository.save(cliente);
+        return convertirADto(clienteRepository.save(cliente));
+    }
+
+    // Públicos porque VehiculoService los usa: buscar el dueño y anidarlo en su respuesta
+    public Cliente buscarCliente(Long id) {
+        return clienteRepository.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("No existe el cliente con id " + id));
+    }
+
+    public ClienteResponseDto convertirADto(Cliente cliente) {
+        return new ClienteResponseDto(
+                cliente.getIdPersona(),
+                cliente.getDocumento(),
+                cliente.getNombreCompleto(),
+                cliente.getCelular(),
+                cliente.getCorreo(),
+                cliente.getActivo(),
+                cliente.getCreateAt(),
+                cliente.getUpdateAt()
+        );
     }
 
 }

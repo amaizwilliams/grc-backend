@@ -1,7 +1,7 @@
 package gestion.reparabilidad.colision.controller;
 
 import gestion.reparabilidad.colision.dto.vehiculo.VehiculoRequestDto;
-import gestion.reparabilidad.colision.modelo.Vehiculo;
+import gestion.reparabilidad.colision.dto.vehiculo.VehiculoResponseDto;
 import gestion.reparabilidad.colision.service.VehiculoService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -22,27 +22,27 @@ public class VehiculoController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Vehiculo> buscar(@PathVariable Long id){
+    public ResponseEntity<VehiculoResponseDto> buscar(@PathVariable Long id){
         return ResponseEntity.ok(vehiculoService.getVehiculoById(id));
     }
 
     @GetMapping("/placa/{placa}")
-    public ResponseEntity<Vehiculo> buscarVehiculoPlaca(@PathVariable String placa){
+    public ResponseEntity<VehiculoResponseDto> buscarVehiculoPlaca(@PathVariable String placa){
         return ResponseEntity.ok(vehiculoService.getVehiculoByPlaca(placa));
     }
 
     @GetMapping
-    public  ResponseEntity<List<Vehiculo>> listar(){
+    public  ResponseEntity<List<VehiculoResponseDto>> listar(){
         return  ResponseEntity.ok(vehiculoService.getAllVehiculo());
     }
 
     @GetMapping("/desactivados")
-    public ResponseEntity<List<Vehiculo>> listarVehiculosDesactivados(){
+    public ResponseEntity<List<VehiculoResponseDto>> listarVehiculosDesactivados(){
         return ResponseEntity.ok(vehiculoService.getAllVehiculoDesactivado());
     }
 
     @PostMapping
-    public  ResponseEntity<Vehiculo> crearVehiculo(@Valid @RequestBody VehiculoRequestDto request){
+    public  ResponseEntity<VehiculoResponseDto> crearVehiculo(@Valid @RequestBody VehiculoRequestDto request){
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(vehiculoService.saveVehiculo(request));
     }
@@ -54,7 +54,7 @@ public class VehiculoController {
     }
 
     @PatchMapping("/{id}/reactivar")
-    public ResponseEntity<Vehiculo> reactivar(@PathVariable Long id){
+    public ResponseEntity<VehiculoResponseDto> reactivar(@PathVariable Long id){
         return ResponseEntity.ok(vehiculoService.reactivarVehiculo(id));
     }
 

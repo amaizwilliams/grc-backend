@@ -1,7 +1,7 @@
 package gestion.reparabilidad.colision.controller;
 
 import gestion.reparabilidad.colision.dto.tecnico.TecnicoRequestDto;
-import gestion.reparabilidad.colision.modelo.Tecnico;
+import gestion.reparabilidad.colision.dto.tecnico.TecnicoResponseDto;
 import gestion.reparabilidad.colision.service.TecnicoService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -23,29 +23,29 @@ public class TecnicoController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Tecnico>> listar() {
+    public ResponseEntity<List<TecnicoResponseDto>> listar() {
         return ResponseEntity.ok(tecnicoService.getAllTecnico());
     }
 
     @GetMapping("/desactivados")
-    public ResponseEntity<List<Tecnico>> listarTecnicosDesactivados() {
+    public ResponseEntity<List<TecnicoResponseDto>> listarTecnicosDesactivados() {
         return ResponseEntity.ok(tecnicoService.getAllTecnicoDesactivado());
     }
 
 
     @GetMapping("/{id}")
-    public ResponseEntity<Tecnico> buscar(@PathVariable Long id) {
+    public ResponseEntity<TecnicoResponseDto> buscar(@PathVariable Long id) {
         return ResponseEntity.ok(tecnicoService.getTecnicoById(id));
     }
 
     @PostMapping
-    public ResponseEntity<Tecnico> crearTecnico(@Valid @RequestBody TecnicoRequestDto request) {
+    public ResponseEntity<TecnicoResponseDto> crearTecnico(@Valid @RequestBody TecnicoRequestDto request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(tecnicoService.saveTecnico(request));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Tecnico> actualizar(@PathVariable Long id, @Valid @RequestBody TecnicoUpdateDto datos) {
+    public ResponseEntity<TecnicoResponseDto> actualizar(@PathVariable Long id, @Valid @RequestBody TecnicoUpdateDto datos) {
         return ResponseEntity.ok(tecnicoService.updateTecnico(id, datos));
     }
 
@@ -56,7 +56,7 @@ public class TecnicoController {
     }
 
     @PatchMapping("/{id}/reactivar")
-    public ResponseEntity<Tecnico> reactivar(@PathVariable Long id){
+    public ResponseEntity<TecnicoResponseDto> reactivar(@PathVariable Long id){
         return ResponseEntity.ok(tecnicoService.reactivarTecnico(id));
     }
 
