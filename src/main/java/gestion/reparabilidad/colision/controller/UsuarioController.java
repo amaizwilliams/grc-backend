@@ -2,6 +2,7 @@ package gestion.reparabilidad.colision.controller;
 
 import gestion.reparabilidad.colision.dto.usuario.UsuarioRequestDto;
 import gestion.reparabilidad.colision.dto.usuario.UsuarioResponseDto;
+import gestion.reparabilidad.colision.dto.usuario.UsuarioUpdateDto;
 import gestion.reparabilidad.colision.service.UsuarioService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -38,7 +39,7 @@ public class UsuarioController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<UsuarioResponseDto> actualizarUsuario(@PathVariable Long id, @Valid @RequestBody UsuarioRequestDto requestDto) {
+    public ResponseEntity<UsuarioResponseDto> actualizarUsuario(@PathVariable Long id, @Valid @RequestBody UsuarioUpdateDto requestDto) {
         return ResponseEntity.ok(usuarioService.updateUsuario(id, requestDto));
     }
 

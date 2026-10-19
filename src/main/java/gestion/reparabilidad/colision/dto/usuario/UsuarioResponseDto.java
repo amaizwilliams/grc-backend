@@ -7,7 +7,6 @@ public record UsuarioResponseDto(
         String nombre,
         String email,
         RolUsuario rol,
-        Long idTecnico,
         Boolean activo
 ) {
 }

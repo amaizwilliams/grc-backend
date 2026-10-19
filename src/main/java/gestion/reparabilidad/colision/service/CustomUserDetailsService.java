@@ -2,6 +2,7 @@ package gestion.reparabilidad.colision.service;
 
 import gestion.reparabilidad.colision.modelo.Usuario;
 import gestion.reparabilidad.colision.repository.UsuarioRepository;
+import gestion.reparabilidad.colision.util.EmailUtil;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -19,7 +20,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        Usuario usuario = usuarioRepository.findByEmail(email)
+        Usuario usuario = usuarioRepository.findByEmail(EmailUtil.normalizar(email))
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + email));
 
         return User.builder()

@@ -15,11 +15,8 @@ public record UsuarioRequestDto(
         @NotNull(message = "El rol es obligatorio")
         RolUsuario rol,
 
-        @Positive(message = "El ID del técnico debe ser un número positivo")
-        Long idTecnico,
-
         @NotBlank(message = "La contraseña no puede estar vacía")
-        @Size(min = 8, message = "La contraseña debe tener al menos 8 caracteres")
+        @Size(min = 8, max = 60, message = "La contraseña debe tener entre 8 y 60 caracteres")
         @Pattern(
                 regexp = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z]).{8,}$",
                 message = "La contraseña debe contener al menos una mayúscula, una minúscula y un número"

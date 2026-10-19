@@ -10,7 +10,6 @@ public record LoginRequest(
         String email,
 
         @NotBlank(message = "La contraseña no puede estar vacía")
-        @Size(min = 8, message = "La contraseña debe tener al menos 8 caracteres")
         String password
 ) {
 }
