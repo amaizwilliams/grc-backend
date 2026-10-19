@@ -30,8 +30,4 @@ public class Tecnico extends Persona {
 
     @Column(name = "update_at")
     private LocalDateTime updateAt;
-
-    @OneToOne(mappedBy = "tecnico")
-    private Usuario usuario;
-
 }

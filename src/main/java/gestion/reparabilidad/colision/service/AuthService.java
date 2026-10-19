@@ -4,6 +4,7 @@ import gestion.reparabilidad.colision.exception.CredencialesInvalidasException;
 import gestion.reparabilidad.colision.exception.UsuarioInactivoException;
 import gestion.reparabilidad.colision.modelo.Usuario;
 import gestion.reparabilidad.colision.repository.UsuarioRepository;
+import gestion.reparabilidad.colision.util.EmailUtil;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -21,7 +22,7 @@ public class AuthService {
     }
 
     public String login(String email, String passwordPlana) {
-        Usuario usuario = usuarioRepository.findByEmail(email)
+        Usuario usuario = usuarioRepository.findByEmail(EmailUtil.normalizar(email))
                 .orElseThrow(() -> new CredencialesInvalidasException("Email o contraseña incorrectos"));
 
         if (!Boolean.TRUE.equals(usuario.getActivo())) {

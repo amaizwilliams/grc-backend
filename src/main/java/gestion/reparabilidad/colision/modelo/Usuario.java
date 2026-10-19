@@ -18,10 +18,10 @@ public class Usuario {
     @Column(name = "id_usuario")
     private Long idUsuario;
 
-    @Column(name = "nombre", nullable = false)
+    @Column(name = "nombre", length = 50, nullable = false)
     private String nombre;
 
-    @Column(name = "email", nullable = false, unique = true)
+    @Column(name = "email", length = 100, nullable = false, unique = true)
     private String email;
 
     @Enumerated(EnumType.STRING)
@@ -29,11 +29,7 @@ public class Usuario {
     @Column(name = "rol", length = 20, nullable = false)
     private RolUsuario rol;
 
-    @OneToOne
-    @JoinColumn(name = "id_tecnico", referencedColumnName = "id_persona")
-    private Tecnico tecnico;
-
-    @Column(name = "password_hash", nullable = false)
+    @Column(name = "password_hash", length = 60, nullable = false)
     private String passwordHash;
 
     @Column(name = "activo", nullable = false)

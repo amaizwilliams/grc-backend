@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -91,4 +92,10 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(Map.of("error", "Error interno del servidor"));
     }
+
+    @ExceptionHandler(EmailAlreadyExistsException.class)
+    public ResponseEntity<String> handleEmailAlreadyExists(EmailAlreadyExistsException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+    }
+
 }
