@@ -3,6 +3,7 @@ import gestion.reparabilidad.colision.dto.tecnico.TecnicoResponseDto;
 import gestion.reparabilidad.colision.dto.tecnico.TecnicoUpdateDto;
 import gestion.reparabilidad.colision.exception.RecursoNoEncontradoException;
 import gestion.reparabilidad.colision.exception.ReglaNegocioException;
+import gestion.reparabilidad.colision.modelo.Enums.Especialidad;
 import gestion.reparabilidad.colision.modelo.Tecnico;
 import gestion.reparabilidad.colision.repository.TecnicoRepository;
 import gestion.reparabilidad.colision.dto.tecnico.TecnicoRequestDto;
@@ -28,6 +29,10 @@ public class TecnicoService {
 
     public List<TecnicoResponseDto> getAllTecnicoDesactivado() {
         return tecnicoRepository.findByActivoFalse().stream().map(this::convertirADto).toList();
+    }
+
+    public List<TecnicoResponseDto> getTecnicosByEspecialidad(Especialidad especialidad) {
+        return tecnicoRepository.findByActivoTrueAndEspecialidad(especialidad).stream().map(this::convertirADto).toList();
     }
 
     public TecnicoResponseDto getTecnicoById(Long id) {
@@ -74,7 +79,7 @@ public class TecnicoService {
         return convertirADto(tecnicoRepository.save(tecnico));
     }
 
-    private Tecnico buscarTecnico(Long id) {
+    public Tecnico buscarTecnico(Long id) {
         return tecnicoRepository.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe el técnico con id " + id));
     }
