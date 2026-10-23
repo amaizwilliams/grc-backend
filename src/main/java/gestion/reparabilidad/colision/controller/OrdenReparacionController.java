@@ -1,5 +1,6 @@
 package gestion.reparabilidad.colision.controller;
 
+import gestion.reparabilidad.colision.dto.ordenReparacion.CambioEtapaRequestDto;
 import gestion.reparabilidad.colision.dto.ordenReparacion.OrdenReparacionRequestDto;
 import gestion.reparabilidad.colision.dto.ordenReparacion.OrdenReparacionResponseDto;
 import gestion.reparabilidad.colision.service.OrdenReparacionService;
@@ -56,6 +57,11 @@ public class OrdenReparacionController {
     @GetMapping("/placa/{placa}")
     public ResponseEntity<List<OrdenReparacionResponseDto>> buscarPorPlaca(@PathVariable String placa) {
         return ResponseEntity.ok(ordenReparacionService.getOrdenesByPlaca(placa));
+    }
+
+    @PatchMapping("/{id}/etapa")
+    public ResponseEntity<OrdenReparacionResponseDto> cambiarEtapa(@PathVariable Long id, @Valid @RequestBody CambioEtapaRequestDto request) {
+        return ResponseEntity.ok(ordenReparacionService.cambiarEtapa(id, request));
     }
 
 }

@@ -2,6 +2,7 @@ package gestion.reparabilidad.colision.controller;
 
 import gestion.reparabilidad.colision.dto.tecnico.TecnicoRequestDto;
 import gestion.reparabilidad.colision.dto.tecnico.TecnicoResponseDto;
+import gestion.reparabilidad.colision.modelo.Enums.Especialidad;
 import gestion.reparabilidad.colision.service.TecnicoService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -37,6 +38,12 @@ public class TecnicoController {
     public ResponseEntity<TecnicoResponseDto> buscar(@PathVariable Long id) {
         return ResponseEntity.ok(tecnicoService.getTecnicoById(id));
     }
+
+    @GetMapping("/especialidad/{especialidad}")
+    public ResponseEntity<List<TecnicoResponseDto>> listarPorEspecialidad(@PathVariable Especialidad especialidad) {
+        return ResponseEntity.ok(tecnicoService.getTecnicosByEspecialidad(especialidad));
+    }
+
 
     @PostMapping
     public ResponseEntity<TecnicoResponseDto> crearTecnico(@Valid @RequestBody TecnicoRequestDto request) {
