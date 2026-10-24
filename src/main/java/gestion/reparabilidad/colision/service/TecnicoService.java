@@ -5,6 +5,7 @@ import gestion.reparabilidad.colision.exception.RecursoNoEncontradoException;
 import gestion.reparabilidad.colision.exception.ReglaNegocioException;
 import gestion.reparabilidad.colision.modelo.Enums.Especialidad;
 import gestion.reparabilidad.colision.modelo.Tecnico;
+import gestion.reparabilidad.colision.repository.OrdenEtapaFechaRepository;
 import gestion.reparabilidad.colision.repository.TecnicoRepository;
 import gestion.reparabilidad.colision.dto.tecnico.TecnicoRequestDto;
 import gestion.reparabilidad.colision.util.CelularUtil;
@@ -18,9 +19,12 @@ import java.util.List;
 public class TecnicoService {
 
     private final TecnicoRepository tecnicoRepository;
+    private final OrdenEtapaFechaRepository ordenEtapaFechaRepository;
 
-    public TecnicoService(TecnicoRepository tecnicoRepository) {
+    public TecnicoService(TecnicoRepository tecnicoRepository,
+                          OrdenEtapaFechaRepository ordenEtapaFechaRepository) {
         this.tecnicoRepository = tecnicoRepository;
+        this.ordenEtapaFechaRepository = ordenEtapaFechaRepository;
     }
 
     public List<TecnicoResponseDto> getAllTecnico() {
@@ -94,7 +98,8 @@ public class TecnicoService {
                 tecnico.getEspecialidad(),
                 tecnico.getActivo(),
                 tecnico.getCreateAt(),
-                tecnico.getUpdateAt()
+                tecnico.getUpdateAt(),
+                (int) ordenEtapaFechaRepository.countByTecnicoIdPersonaAndFechaFinIsNull(tecnico.getIdPersona())
         );
     }
 

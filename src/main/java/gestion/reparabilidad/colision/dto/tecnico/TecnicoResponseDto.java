@@ -13,6 +13,7 @@ public record TecnicoResponseDto(
         Especialidad especialidad,
         Boolean activo,
         LocalDateTime createAt,
-        LocalDateTime updateAt
+        LocalDateTime updateAt,
+        Integer enCurso
 ) {
 }
