@@ -10,4 +10,5 @@ import java.util.List;
 public interface ObservacionRepository extends JpaRepository<Observacion, Long> {
 
     List<Observacion> findByOrdenReparacionIdOrdenReparacionOrderByCreateAtDesc(Long idOrden);
+
 }

@@ -114,14 +114,13 @@ public class OrdenReparacionService {
                 .stream().map(this::convertirADto).toList();
     }
 
-    private void validarActiva(OrdenReparacion orden) {
+    public void validarActiva(OrdenReparacion orden) {
         if (orden.getEstado() != Estado.ACTIVA) {
-            throw new ReglaNegocioException("La orden " + orden.getIdOrdenReparacion()
-                    + " está " + orden.getEstado() + "; solo se pueden marcar fechas en una orden activa");
+            throw new ReglaNegocioException("solo se puede modificar una orden activa");
         }
     }
 
-    private void aplicarIngresoCotizar(OrdenReparacion orden, LocalDate fecha) {
+    public void aplicarIngresoCotizar(OrdenReparacion orden, LocalDate fecha) {
         orden.setFechaIngresoCotizar(fecha);
         orden.setUpdateAt(LocalDateTime.now());
     }
