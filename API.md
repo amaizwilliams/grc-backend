@@ -15,7 +15,7 @@ Cambio local sin commitear en `application.properties`: solo 4 líneas en blanco
 
 **Base en uso:** la **local** (XAMPP), porque en la universidad la red bloquea Tailscale. Ver sección 5.
 
-### Siguiente: fechas del ciclo de vida — rama `feature/fechas-orden`
+### Hecho: fechas del ciclo de vida — rama `feature/fechas-orden`
 Se hace antes de `/entregar` (decidido 2026-10-24): hoy la API no puede meter una orden al Kanban (cambio de etapa y entrega exigen `fechaIngresoReparacion`, y nada la llena), es el orden real del ciclo y Valoración reutilizará la lógica de cotizar.
 
 Especificación propuesta (todos responden 200 con `OrdenReparacionResponseDto`, `@Transactional`, asignan `updateAt`):
@@ -26,13 +26,14 @@ Especificación propuesta (todos responden 200 con `OrdenReparacionResponseDto`,
 | `PATCH /api/orden/{id}/ingreso-reparacion` | `FechaRequestDto(fecha)` | `fechaIngresoReparacion = fecha` + `ubicacionActual = EN_TALLER` |
 | `PATCH /api/orden/{id}/dias-estimados` | `DiasEstimadosRequestDto(dias)` | `diasEstimadoEntrega` + `fechaDeEntregaEstimada = fechaIngresoReparacion.plusDays(dias)` |
 
-- DTOs (`record`, `dto/ordenReparacion`): `FechaRequestDto(@NotNull @PastOrPresent LocalDate fecha)` reutilizado en las dos fechas; `DiasEstimadosRequestDto(@NotNull @Min(1) @Max(127) Integer dias)` — `Integer` y no `Byte` para que un 200 dé el 400 claro del `@Max`; el Service hace `.byteValue()`.
+- DTOs (`record`, `dto/ordenReparacion`): `FechaRequestDto(@NotNull @PastOrPresent LocalDate fecha)` reutilizado en las dos fechas; `DiasEstimadosRequestDto(@NotNull @Min(1) @Max(30) dias)` — **tope de 30 días por decisión de Adrian (2026-10-24)**; pendiente confirmar con el taller que ninguna reparación pasa de un mes. Adrian lo dejó en `Byte`; se le recomendó `Integer` (con `Byte`, un valor ≥ 128 da el 400 genérico de Jackson en vez del mensaje del `@Max`; el Service haría `.byteValue()`).
 - Validaciones: orden 404; no `ACTIVA` → 409; fecha ya marcada → 409 ("una sola vez"); ingreso a reparación anterior a la fecha de cotizar (si existe) → 409; cotizar **no** es requisito del ingreso; días sin `fechaIngresoReparacion` → 409; días ya marcados → 409.
 - Separar `aplicarIngresoCotizar(orden, fecha)` (privado) para que Valoración lo llame con `LocalDate.now()` si la fecha está en `null`.
-- **Decisión pendiente de Adrian:** el botón de calendario ¿marca **hoy** o deja **elegir** la fecha? Recomendado: elegir, con `@PastOrPresent` (el asesor puede registrar al día siguiente). Si es "hoy", los endpoints de fecha no llevan body.
+- **El calendario deja elegir la fecha** (2026-10-24, se tomó la recomendación): `@PastOrPresent`, porque el asesor puede registrar al día siguiente. Si se cambia a "siempre hoy", los endpoints de fecha dejan de llevar body.
+- Rama: `feature/fechas-orden` (la que se creó como `feature/entregar-orden`, renombrada antes del push); lleva también el commit de `API.md` (`cb87293`). La entrega va en una rama nueva.
 - Casos con los datos locales: OT 1–3 (las tres fechas desde cero), OT 4 (cotizar ya marcado → 409; ingreso → 200), OT 5 (días → 200; ingreso otra vez → 409), OT 3 (días antes del ingreso → 409), OT 11/12 (no `ACTIVA` → 409).
 
-### Después: entrega — rama `feature/entregar-orden`
+### Siguiente: entrega — rama nueva `feature/entregar-orden`
 Paso 4 del cambio de etapa: `PATCH /api/orden/{id}/entregar` (reglas en CLAUDE.md, "Entrega de la orden"). Probar con la OT 10 (Listo para entregar); OT 11/12 → 409 por estado; OT 1–4 → 409 por falta de fecha de ingreso.
 
 ---
@@ -69,11 +70,12 @@ Paso 4 del cambio de etapa: `PATCH /api/orden/{id}/entregar` (reglas en CLAUDE.m
 **5. Módulos de negocio**
 - [x] `Etapas` (catálogo, 2026-10-20).
 - [x] Cambio de etapa, pasos 1–3 (2026-10-22, PR #9).
-- [ ] **Fechas del ciclo de vida** ← SIGUIENTE.
-- [ ] Entrega (`/entregar`).
+- [x] Fechas del ciclo de vida (2026-10-24, rama `feature/fechas-orden`): 19 casos con curl OK en la base local.
+- [ ] **Entrega (`/entregar`)** ← SIGUIENTE.
 - [ ] Sincronizar `ubicacionActual` al crear una `Observacion` con ubicación.
 - [ ] `Observacion` + imágenes (si la etapa referenciada no tiene `fechaInicio`, marcarla con `NOW()` en la misma transacción).
 - [ ] `Valoracion` + detalle + imágenes + PDF/ZIP (la primera valoración marca `fechaIngresoCotizar` si falta; `gravedad` solo con `REPARACION`).
+  - **Recordatorio (2026-10-24):** al guardar la primera valoración, `ValoracionService` debe llamar a `aplicarIngresoCotizar(orden, LocalDate.now())` de `OrdenReparacionService` **solo si** `orden.getFechaIngresoCotizar() == null` (nunca a `marcarIngresoCotizar`, que lanza 409 si ya está marcada). Hoy `aplicarIngresoCotizar` es `private`: hacerlo `public` en ese momento. Todavía no existe ninguna capa de Valoración.
 - [ ] Dashboard de alertas; `Notificaciones` WhatsApp `@Async` + `PlantillaMensaje`; `Modulo`/`RolModulo`.
 - **Decisión abierta:** dónde se guardan las fotos (disco, S3, Cloudinary). Bloquea Observaciones y Valoración.
 
@@ -232,13 +234,13 @@ Verificado contra el código el 2026-10-20.
 ## 6. Hallazgos
 
 - **2026-10-24 — `OrdenEtapaFecha` no declara el `UNIQUE(id_orden_reparacion, id_etapa)`**: no aparece en el DDL generado. En la compartida existe (puesto a mano) y en la local se agregó como `uk_orden_etapa`. Pendiente declararlo en la entidad.
+- **2026-10-24 — MariaDB local dañado por un cierre inesperado:** XAMPP no arrancaba ("MySQL shutdown unexpectedly"); con `mysqld --console` se vio `Can't open and lock privilege tables: Incorrect file format 'db'`. Se respaldó `data/mysql` (en el scratchpad), se restauró `mysql.db` desde `C:\xampp\mysql\backup\mysql` (solo tenía los permisos por defecto) y se repararon con `aria_chk -r` `procs_priv`, `event`, `global_priv` y `proxies_priv`. Usuarios, contraseñas y bases de datos quedaron intactos. Prevención: detener MySQL desde XAMPP antes de suspender o apagar el portátil.
 - **2026-10-24 — `target/schema-modelo.sql` acumula corridas** de `./mvnw test`; la versión vigente es la que empieza en el último `create table`.
 
 ---
 
 ## 7. Decisiones abiertas y fases futuras
 
-- **Calendario de las fechas del ciclo de vida:** ¿marca hoy o deja elegir? (ver sección 1).
 - **Reproceso de una etapa ya visitada (pregunta para el taller):** cuando Control de calidad rechaza un trabajo, ¿basta con una observación o hay que registrar que el carro volvió a Pintura (y pagar el repintado)? Si es lo segundo ("versión C"): quitar el `UNIQUE(orden, etapa)` y el `existsBy...`, permitir varias filas por etapa (días en etapa = suma) y decidir si se limitan los ciclos. **Decidirlo antes del Dashboard y del cálculo de pagos.** Pasar de A a C no obliga a rehacer nada.
 - **Usuario que entregó la orden:** sin nota no queda registro. Mejora futura: `OrdenReparacion.usuarioEntrega` (FK a `Usuario`, nullable, desde el token).
 - **Unificar Lombok vs. accesores a mano** (decisión con Adrian): (a) quitar Lombok de las 7 entidades o (b) adoptarlo en todo el modelo.
@@ -323,4 +325,4 @@ Decisiones confirmadas por pantalla. Las reglas transversales (etapas, fechas, e
 - **2026-10-18:** DTOs a `record` + `ResponseDto` (`a763d8c`); JWT (`eab142f`); capas de `OrdenReparacion` (`d66a543`, PR #6); `PlacaUtil`, `DocumentoUtil`; paso a la base compartida; PR #7 (Usuario: excepciones propias, `UsuarioUpdateDto`, `EmailUtil`, sin relación con `Tecnico`); `OrdenReparacion` y `Etapas` con Lombok; `ubicacionActual` en `OrdenReparacion`.
 - **2026-10-20:** `Etapas` con `diasLimiteCritico` y `especialidad`, capas completas y catálogo cargado (`3a62605`, PR #8). Bancada y Listo para entregar sin técnico.
 - **2026-10-22:** "Entregado" deja de ser etapa (fila id 10 borrada de la compartida) → evento `/entregar`; regla de movimiento "versión A"; cambio de etapa pasos 1–3 (`0dc66be`, PR #9 → `000afc7`).
-- **2026-10-24:** BD local en XAMPP (la red de la universidad bloquea Tailscale): FKs/UNIQUE a mano y datos de prueba. Hallazgo del UNIQUE faltante en `OrdenEtapaFecha`. Se decide hacer las fechas del ciclo de vida antes de `/entregar`. CLAUDE.md se separa en reglas (CLAUDE.md) y estado (API.md); **API.md sí se versiona** (repo público: sin contraseñas, IPs ni correos personales).
+- **2026-10-24:** BD local en XAMPP (la red de la universidad bloquea Tailscale): FKs/UNIQUE a mano y datos de prueba. Hallazgo del UNIQUE faltante en `OrdenEtapaFecha`. Se decide hacer las fechas del ciclo de vida antes de `/entregar`; Adrian las implementa y pasan 19 casos con curl. Reparación del MariaDB local. CLAUDE.md se separa en reglas (CLAUDE.md) y estado (API.md); **API.md sí se versiona** (repo público: sin contraseñas, IPs ni correos personales).

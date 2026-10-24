@@ -1,8 +1,6 @@
 package gestion.reparabilidad.colision.service;
 
-import gestion.reparabilidad.colision.dto.ordenReparacion.CambioEtapaRequestDto;
-import gestion.reparabilidad.colision.dto.ordenReparacion.OrdenReparacionRequestDto;
-import gestion.reparabilidad.colision.dto.ordenReparacion.OrdenReparacionResponseDto;
+import gestion.reparabilidad.colision.dto.ordenReparacion.*;
 import gestion.reparabilidad.colision.exception.RecursoNoEncontradoException;
 import gestion.reparabilidad.colision.exception.ReglaNegocioException;
 import gestion.reparabilidad.colision.modelo.*;
@@ -14,6 +12,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -109,6 +108,71 @@ public class OrdenReparacionService {
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe la orden de reparación con id " + id));
     }
 
+    private void validarActiva(OrdenReparacion orden) {
+        if (orden.getEstado() != Estado.ACTIVA) {
+            throw new ReglaNegocioException("La orden " + orden.getIdOrdenReparacion()
+                    + " está " + orden.getEstado() + "; solo se pueden marcar fechas en una orden activa");
+        }
+    }
+
+    private void aplicarIngresoCotizar(OrdenReparacion orden, LocalDate fecha) {
+        orden.setFechaIngresoCotizar(fecha);
+        orden.setUpdateAt(LocalDateTime.now());
+    }
+
+    @Transactional
+    public OrdenReparacionResponseDto marcarIngresoTaller(Long idOrden, FechaRequestDto request) {
+        OrdenReparacion orden = buscarOrden(idOrden);
+        validarActiva(orden);
+        if (orden.getFechaIngresoReparacion() != null) {
+            throw new ReglaNegocioException("La orden " + idOrden + " ya tiene la fecha de ingreso llena (" + orden.getFechaIngresoReparacion() + ")");
+        }
+        if (orden.getFechaIngresoCotizar() != null && request.fecha().isBefore(orden.getFechaIngresoCotizar())) {
+            throw new ReglaNegocioException("La fecha de ingreso a reparacion no puede ser anterior a la de ingreso a cotizar");
+        }
+        orden.setUbicacionActual(Ubicacion.EN_TALLER);
+        orden.setFechaIngresoReparacion(request.fecha());
+        orden.setUpdateAt(LocalDateTime.now());
+        return convertirADto(ordenReparacionRepository.save(orden));
+    }
+
+    @Transactional
+    public OrdenReparacionResponseDto marcarIngresoCotizar(Long idOrden, FechaRequestDto request) {
+        OrdenReparacion orden = buscarOrden(idOrden);
+        validarActiva(orden);
+
+        if (orden.getFechaIngresoCotizar() != null) {
+            throw new ReglaNegocioException("La orden " + idOrden + " ya tiene fecha de ingreso a cotizar ("
+                    + orden.getFechaIngresoCotizar() + ")");
+        }
+        if (orden.getFechaIngresoReparacion() != null && request.fecha().isAfter(orden.getFechaIngresoReparacion())) {
+            throw new ReglaNegocioException("La fecha de ingreso a cotizar no puede ser posterior al ingreso al taller ("
+                    + orden.getFechaIngresoReparacion() + ")");
+        }
+
+        aplicarIngresoCotizar(orden, request.fecha());
+        return convertirADto(ordenReparacionRepository.save(orden));
+    }
+
+    @Transactional
+    public OrdenReparacionResponseDto marcarDiasEstimados(Long idOrden, DiasEstimadosRequestDto request) {
+        OrdenReparacion orden = buscarOrden(idOrden);
+        validarActiva(orden);
+        if (orden.getFechaIngresoReparacion() == null) {
+            throw new ReglaNegocioException("No se puede marcar los dias estimados sin marcar la fecha de ingreso a reparacion, marcala antes de marcar los dias estimados");
+        }
+        if (orden.getDiasEstimadoEntrega() != null) {
+            throw new ReglaNegocioException("La orden " + idOrden + " ya tiene días estimados de entrega ("
+                    + orden.getDiasEstimadoEntrega() + ")");
+        }
+
+        orden.setDiasEstimadoEntrega(request.dias().byteValue());
+        orden.setFechaDeEntregaEstimada(orden.getFechaIngresoReparacion().plusDays(request.dias()));
+        orden.setUpdateAt(LocalDateTime.now());
+        return convertirADto(ordenReparacionRepository.save(orden));
+
+    }
+
     // El filtro JWT deja el email del usuario como nombre de la autenticación
     private Usuario buscarUsuarioAutenticado() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
@@ -117,7 +181,7 @@ public class OrdenReparacionService {
     }
 
     @Transactional
-    public OrdenReparacionResponseDto cambiarEtapa(Long idOrden, CambioEtapaRequestDto request){
+    public OrdenReparacionResponseDto cambiarEtapa(Long idOrden, CambioEtapaRequestDto request) {
         OrdenReparacion orden = buscarOrden(idOrden);
 
         if (orden.getEstado() != Estado.ACTIVA) {
