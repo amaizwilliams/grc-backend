@@ -62,6 +62,11 @@ public class OrdenReparacionController {
         return ResponseEntity.ok(ordenReparacionService.getOrdenById(id));
     }
 
+    @GetMapping("/entregadas")
+    public ResponseEntity<List<OrdenReparacionResponseDto>> listarEntregadas() {
+        return ResponseEntity.ok(ordenReparacionService.getOrdenesEntregadas());
+    }
+
     @GetMapping
     public ResponseEntity<List<OrdenReparacionResponseDto>> listarActivas() {
         return ResponseEntity.ok(ordenReparacionService.getAllOrdenActivas());
@@ -77,4 +82,8 @@ public class OrdenReparacionController {
         return ResponseEntity.ok(ordenReparacionService.cambiarEtapa(id, request));
     }
 
+    @PatchMapping("/{id}/entregar-orden")
+    public ResponseEntity<OrdenReparacionResponseDto> entregaVehiculo(@PathVariable Long id, @Valid @RequestBody EntregaRequestDto request){
+        return ResponseEntity.ok(ordenReparacionService.entregarOrden(id, request));
+    }
 }

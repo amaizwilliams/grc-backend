@@ -108,6 +108,12 @@ public class OrdenReparacionService {
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe la orden de reparación con id " + id));
     }
 
+    @Transactional(readOnly = true)
+    public List<OrdenReparacionResponseDto> getOrdenesEntregadas() {
+        return ordenReparacionRepository.findByEstadoOrderByFechaDeEntregaRealDesc(Estado.CERRADA)
+                .stream().map(this::convertirADto).toList();
+    }
+
     private void validarActiva(OrdenReparacion orden) {
         if (orden.getEstado() != Estado.ACTIVA) {
             throw new ReglaNegocioException("La orden " + orden.getIdOrdenReparacion()
@@ -251,6 +257,40 @@ public class OrdenReparacionService {
             observacionRepository.save(observacion);
         }
         orden.setEtapaActual(destino);
+        orden.setUpdateAt(ahora);
+        return convertirADto(ordenReparacionRepository.save(orden));
+
+    }
+
+    @Transactional
+    public OrdenReparacionResponseDto entregarOrden(Long idOrden, EntregaRequestDto request) {
+        OrdenReparacion orden = buscarOrden(idOrden);
+        validarActiva(orden);
+        if (orden.getFechaIngresoReparacion() == null) {        // nunca entró al taller → 409
+            throw new ReglaNegocioException("La orden " + idOrden + " no tiene fecha de ingreso a reparación; no se puede entregar");
+        }
+
+        LocalDateTime ahora = LocalDateTime.now();
+        ordenEtapaFechaRepository.findByOrdenReparacionIdOrdenReparacionAndFechaFinIsNull(idOrden)
+                .ifPresent(abierta -> {
+                    abierta.setFechaFin(ahora);
+                    abierta.setCompletada(true);
+                    ordenEtapaFechaRepository.save(abierta);
+                });
+        if (request.nota() != null && !request.nota().isBlank()) {
+            Observacion observacion = new Observacion();
+            observacion.setOrdenReparacion(orden);
+            observacion.setUsuario(buscarUsuarioAutenticado());
+            observacion.setEtapa(null);                          // NULL = "Entrega"
+            observacion.setUbicacion(Ubicacion.FUERA_DE_TALLER);
+            observacion.setNota(request.nota().trim());
+            observacion.setVisibleCliente(Boolean.TRUE.equals(request.visibleCliente()));
+            observacion.setCreateAt(ahora);
+            observacionRepository.save(observacion);
+        }
+        orden.setEstado(Estado.CERRADA);
+        orden.setFechaDeEntregaReal(ahora.toLocalDate());
+        orden.setUbicacionActual(Ubicacion.FUERA_DE_TALLER);
         orden.setUpdateAt(ahora);
         return convertirADto(ordenReparacionRepository.save(orden));
 
