@@ -34,7 +34,7 @@ Especificación propuesta (todos responden 200 con `OrdenReparacionResponseDto`,
 - Casos con los datos locales: OT 1–3 (las tres fechas desde cero), OT 4 (cotizar ya marcado → 409; ingreso → 200), OT 5 (días → 200; ingreso otra vez → 409), OT 3 (días antes del ingreso → 409), OT 11/12 (no `ACTIVA` → 409).
 
 ### Hecho: entrega — rama `feature/entregar-orden`
-Paso 4 del cambio de etapa: `PATCH /api/orden/{id}/entregar` (reglas en CLAUDE.md, "Entrega de la orden"). Probar con la OT 10 (Listo para entregar); OT 11/12 → 409 por estado; OT 1–4 → 409 por falta de fecha de ingreso.
+Paso 4 del cambio de etapa: `PATCH /api/orden/{id}/entregar-orden` (reglas en CLAUDE.md, "Entrega de la orden"). Probar con la OT 10 (Listo para entregar); OT 11/12 → 409 por estado; OT 1–4 → 409 por falta de fecha de ingreso.
 
 ---
 
@@ -73,8 +73,10 @@ Paso 4 del cambio de etapa: `PATCH /api/orden/{id}/entregar` (reglas en CLAUDE.m
 - [x] Fechas del ciclo de vida (2026-10-24, rama `feature/fechas-orden`): 19 casos con curl OK en la base local.
 - [x] Entrega (2026-10-24, rama `feature/entregar-orden`): 12 casos con curl OK en la base local (ruta implementada: `PATCH /api/orden/{id}/entregar-orden`).
 - [x] `GET /api/orden/entregadas` (2026-10-24, rama `feature/entregar-orden`): `findByEstadoOrderByFechaDeEntregaRealDesc(CERRADA)`, más reciente primero. Probado. A futuro: limitar por días o paginar (la lista crece sin fin).
+- [ ] Mensaje de `validarActiva`: todavía dice "solo se pueden marcar fechas en una orden activa" y lo usan también la entrega y otros flujos → generalizar a "solo se puede modificar una orden activa".
 - [ ] Sincronizar `ubicacionActual` al crear una `Observacion` con ubicación.
-- [ ] `Observacion` + imágenes (si la etapa referenciada no tiene `fechaInicio`, marcarla con `NOW()` en la misma transacción).
+- [x] Observaciones (solo texto) (2026-10-24, rama `feature/observaciones`): `POST`/`GET /api/orden/{idOrden}/observaciones` con `ObservacionesService` + `ObservacionController`. Etapa solo visitada (o `NULL` = Entrega, solo en `CERRADA`); `CANCELADA` → 409; ubicación y estado de repuestos opcionales: si viene ubicación actualiza `ubicacionActual` (si no, hereda la de la orden). 21 casos con curl OK + regresión de etapa, entrega y fechas. **Decisión de ubicación opcional tomada por la recomendación; Adrian no la contradijo.**
+- [ ] Imágenes de observaciones (bloqueado: decidir dónde se guardan las fotos).
 - [ ] `Valoracion` + detalle + imágenes + PDF/ZIP (la primera valoración marca `fechaIngresoCotizar` si falta; `gravedad` solo con `REPARACION`).
   - **Recordatorio (2026-10-24):** al guardar la primera valoración, `ValoracionService` debe llamar a `aplicarIngresoCotizar(orden, LocalDate.now())` de `OrdenReparacionService` **solo si** `orden.getFechaIngresoCotizar() == null` (nunca a `marcarIngresoCotizar`, que lanza 409 si ya está marcada). Hoy `aplicarIngresoCotizar` es `private`: hacerlo `public` en ese momento. Todavía no existe ninguna capa de Valoración.
 - [ ] Dashboard de alertas; `Notificaciones` WhatsApp `@Async` + `PlantillaMensaje`; `Modulo`/`RolModulo`.
@@ -92,7 +94,7 @@ Todos los DTOs son `record`; ningún controlador devuelve una entidad.
 
 | Módulo | Ruta | Endpoints |
 |---|---|---|
-| `Auth` | `/api/auth` | `POST /login` → `{"token": "..."}` |
+| `Auth` | `/api/auth` | `POST /login` → `{"token": "...", "usuario": UsuarioResponseDto}` (desde `c3706c5`, del compañero) |
 | `Usuario` | `/api/usuario` | GET lista (activos, filtrados en memoria), GET `/{id}`, POST (201), PUT `/{id}`, DELETE (204, lógico). Sin `/desactivados` ni `/reactivar` |
 | `Cliente` | `/api/cliente` | POST, PUT `/{id}`, GET `/{id}`, GET `/documento/{documento}`, GET lista, GET `/desactivados`, DELETE (lógico), PATCH `/{id}/reactivar` |
 | `Tecnico` | `/api/tecnico` | GET lista, GET `/desactivados`, GET `/{id}`, GET `/especialidad/{especialidad}` (activos; valor inválido o en minúsculas → 400), POST, PUT `/{id}`, DELETE (lógico), PATCH `/{id}/reactivar` |
@@ -111,7 +113,7 @@ Infraestructura:
 - Token: email como `subject`, `rol` como claim, expira en `jwt.expiration` (3600 s).
 - `AuthService.login`: normaliza el email, valida `activo`, compara con BCrypt; email o contraseña incorrectos → mismo 401 genérico.
 - **Falta control por rol** (cualquier autenticado entra a todo). `CustomUserDetailsService` ya carga el rol como authority.
-- Quedan 6 controladores con `@CrossOrigin(origins = "*")` (todos menos `EtapasController`).
+- Quedan 7 controladores con `@CrossOrigin(origins = "*")` (todos menos `EtapasController`; `ObservacionController` lo trae desde 2026-10-24).
 
 ### Cambio de etapa (`PATCH /api/orden/{id}/etapa`, 2026-10-22)
 - Repositorios: `OrdenEtapaFechaRepository` con `existsByOrdenReparacionIdOrdenReparacionAndEtapaIdEtapa` y `findByOrdenReparacionIdOrdenReparacionAndFechaFinIsNull` (`Optional`); `HistorialEtapasRepository` y `ObservacionRepository` vacíos.
