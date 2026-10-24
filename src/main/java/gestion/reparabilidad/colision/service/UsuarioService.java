@@ -28,8 +28,13 @@ public class UsuarioService {
 
 
     public List<UsuarioResponseDto> getAllUsuario() {
-        return usuarioRepository.findAll().stream()
-                .filter(Usuario::getActivo) // Opcional: filtrar solo los activos
+        return usuarioRepository.findByActivoTrue().stream()
+                .map(this::convertirAEntityADto)
+                .collect(Collectors.toList());
+    }
+
+    public List<UsuarioResponseDto> getAllUsuarioDesactivado() {
+        return usuarioRepository.findByActivoFalse().stream()
                 .map(this::convertirAEntityADto)
                 .collect(Collectors.toList());
     }
@@ -93,6 +98,14 @@ public class UsuarioService {
 
         usuario.setActivo(false); // No borramos de la BD, solo inactivamos
         usuarioRepository.save(usuario);
+    }
+
+    public UsuarioResponseDto reactivarUsuario(Long id) {
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Usuario no encontrado con ID: " + id));
+
+        usuario.setActivo(true);
+        return convertirAEntityADto(usuarioRepository.save(usuario));
     }
 
 

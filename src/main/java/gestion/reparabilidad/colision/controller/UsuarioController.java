@@ -26,6 +26,11 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarioService.getAllUsuario());
     }
 
+    @GetMapping("/desactivados")
+    public ResponseEntity<List<UsuarioResponseDto>> listarUsuariosDesactivados() {
+        return ResponseEntity.ok(usuarioService.getAllUsuarioDesactivado());
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<UsuarioResponseDto> buscarUsuario(@PathVariable Long id) {
         return ResponseEntity.ok(usuarioService.getUsuarioById(id));
@@ -46,6 +51,11 @@ public class UsuarioController {
     public ResponseEntity<Void> eliminarUsuario(@PathVariable Long id) {
         usuarioService.deleteUsuarioLogically(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/reactivar")
+    public ResponseEntity<UsuarioResponseDto> reactivarUsuario(@PathVariable Long id) {
+        return ResponseEntity.ok(usuarioService.reactivarUsuario(id));
     }
 
 
