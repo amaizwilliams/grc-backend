@@ -33,7 +33,7 @@ Especificación propuesta (todos responden 200 con `OrdenReparacionResponseDto`,
 - Rama: `feature/fechas-orden` (la que se creó como `feature/entregar-orden`, renombrada antes del push); lleva también el commit de `API.md` (`cb87293`). La entrega va en una rama nueva.
 - Casos con los datos locales: OT 1–3 (las tres fechas desde cero), OT 4 (cotizar ya marcado → 409; ingreso → 200), OT 5 (días → 200; ingreso otra vez → 409), OT 3 (días antes del ingreso → 409), OT 11/12 (no `ACTIVA` → 409).
 
-### Siguiente: entrega — rama nueva `feature/entregar-orden`
+### Hecho: entrega — rama `feature/entregar-orden`
 Paso 4 del cambio de etapa: `PATCH /api/orden/{id}/entregar` (reglas en CLAUDE.md, "Entrega de la orden"). Probar con la OT 10 (Listo para entregar); OT 11/12 → 409 por estado; OT 1–4 → 409 por falta de fecha de ingreso.
 
 ---
@@ -71,7 +71,8 @@ Paso 4 del cambio de etapa: `PATCH /api/orden/{id}/entregar` (reglas en CLAUDE.m
 - [x] `Etapas` (catálogo, 2026-10-20).
 - [x] Cambio de etapa, pasos 1–3 (2026-10-22, PR #9).
 - [x] Fechas del ciclo de vida (2026-10-24, rama `feature/fechas-orden`): 19 casos con curl OK en la base local.
-- [ ] **Entrega (`/entregar`)** ← SIGUIENTE.
+- [x] Entrega (2026-10-24, rama `feature/entregar-orden`): 12 casos con curl OK en la base local (ruta implementada: `PATCH /api/orden/{id}/entregar-orden`).
+- [x] `GET /api/orden/entregadas` (2026-10-24, rama `feature/entregar-orden`): `findByEstadoOrderByFechaDeEntregaRealDesc(CERRADA)`, más reciente primero. Probado. A futuro: limitar por días o paginar (la lista crece sin fin).
 - [ ] Sincronizar `ubicacionActual` al crear una `Observacion` con ubicación.
 - [ ] `Observacion` + imágenes (si la etapa referenciada no tiene `fechaInicio`, marcarla con `NOW()` en la misma transacción).
 - [ ] `Valoracion` + detalle + imágenes + PDF/ZIP (la primera valoración marca `fechaIngresoCotizar` si falta; `gravedad` solo con `REPARACION`).
@@ -96,7 +97,7 @@ Todos los DTOs son `record`; ningún controlador devuelve una entidad.
 | `Cliente` | `/api/cliente` | POST, PUT `/{id}`, GET `/{id}`, GET `/documento/{documento}`, GET lista, GET `/desactivados`, DELETE (lógico), PATCH `/{id}/reactivar` |
 | `Tecnico` | `/api/tecnico` | GET lista, GET `/desactivados`, GET `/{id}`, GET `/especialidad/{especialidad}` (activos; valor inválido o en minúsculas → 400), POST, PUT `/{id}`, DELETE (lógico), PATCH `/{id}/reactivar` |
 | `Vehiculo` | `/api/vehiculo` | GET `/{id}`, GET `/placa/{placa}`, GET lista, GET `/desactivados`, POST, DELETE (lógico), PATCH `/{id}/reactivar`. Sin update (a propósito) |
-| `OrdenReparacion` | `/api/orden` | POST, PUT `/{id}` (solo `ACTIVA`), DELETE `/{id}` (→ `CANCELADA`), PATCH `/{id}/reactivar` (solo desde `CANCELADA`), GET `/{id}`, GET (activas), GET `/placa/{placa}`, **PATCH `/{id}/etapa`** |
+| `OrdenReparacion` | `/api/orden` | POST, PUT `/{id}` (solo `ACTIVA`), DELETE `/{id}` (→ `CANCELADA`), PATCH `/{id}/reactivar` (solo desde `CANCELADA`), GET `/{id}`, GET (activas), GET `/entregadas` (CERRADA, la más reciente primero), GET `/placa/{placa}`, PATCH `/{id}/etapa`, PATCH `/{id}/ingreso-cotizar`, PATCH `/{id}/ingreso-reparacion`, PATCH `/{id}/dias-estimados`, PATCH `/{id}/entregar-orden` |
 | `Etapas` | `/api/etapa` | GET lista (por `orden`), GET `/{id}`, POST, PUT `/{id}`. Sin DELETE, a propósito |
 
 Infraestructura:
@@ -225,6 +226,9 @@ Verificado contra el código el 2026-10-20.
 | 10 | ACTIVA | Listo para entregar — **próxima a vencer** (26-oct); la trae el cliente 4, el vehículo es del 12 | Probar `/entregar` |
 | 11 | CERRADA | Entregada 17-sep, vehículo 1 (segunda orden del vehículo) | 409 por estado; columna Entregado |
 | 12 | CANCELADA | Vehículo 2 | 409 por estado; reactivar |
+| 13 | CERRADA | Vehículo 3, entregada a tiempo el 10-oct (estimada 12-oct) | Listado de entregadas |
+| 14 | CERRADA | Vehículo 6, entregada con retraso el 20-oct (estimada 17-oct); la trajo el cliente 4 | Listado de entregadas |
+| 15 | CERRADA | Vehículo 8, entregada el 29-ago desde Armado (sin nota de entrega) | Listado; entrega desde una etapa intermedia |
 
   - Las órdenes con etapa tienen su `orden_etapa_fecha` e `historial_etapas` coherentes, y hay 4 observaciones (una de entrega con `etapa = NULL`).
 - Scripts de carga (temporales, del 2026-10-24): `constraints_local.sql` y `seed_local.sql` en el scratchpad de la sesión de Claude. Si se quieren conservar, moverlos a `docs/`.
