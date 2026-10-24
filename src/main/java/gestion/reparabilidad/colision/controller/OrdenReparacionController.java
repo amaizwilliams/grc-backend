@@ -1,8 +1,6 @@
 package gestion.reparabilidad.colision.controller;
 
-import gestion.reparabilidad.colision.dto.ordenReparacion.CambioEtapaRequestDto;
-import gestion.reparabilidad.colision.dto.ordenReparacion.OrdenReparacionRequestDto;
-import gestion.reparabilidad.colision.dto.ordenReparacion.OrdenReparacionResponseDto;
+import gestion.reparabilidad.colision.dto.ordenReparacion.*;
 import gestion.reparabilidad.colision.service.OrdenReparacionService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -26,6 +24,21 @@ public class OrdenReparacionController {
     public ResponseEntity<OrdenReparacionResponseDto> crearOrden(@Valid @RequestBody OrdenReparacionRequestDto request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ordenReparacionService.saveOrden(request));
+    }
+
+    @PatchMapping("/{id}/ingreso-cotizar")
+    public ResponseEntity<OrdenReparacionResponseDto> marcarFechaCotizar(@PathVariable Long id, @Valid @RequestBody FechaRequestDto request) {
+        return ResponseEntity.ok(ordenReparacionService.marcarIngresoCotizar(id, request));
+    }
+
+    @PatchMapping("/{id}/ingreso-reparacion")
+    public ResponseEntity<OrdenReparacionResponseDto> marcarFechaIngresoReparacion(@PathVariable Long id, @Valid @RequestBody FechaRequestDto requestDto) {
+        return ResponseEntity.ok(ordenReparacionService.marcarIngresoTaller(id, requestDto));
+    }
+
+    @PatchMapping("/{id}/dias-estimados")
+    public ResponseEntity<OrdenReparacionResponseDto> diasEstimadosReparacion(@PathVariable Long id, @Valid @RequestBody DiasEstimadosRequestDto request) {
+        return ResponseEntity.ok(ordenReparacionService.marcarDiasEstimados(id, request));
     }
 
     @PutMapping("/{id}")
