@@ -13,5 +13,6 @@ public interface OrdenReparacionRepository extends JpaRepository<OrdenReparacion
     List<OrdenReparacion> findByEstado(Estado estado);                    // listado de activas
     List<OrdenReparacion> findByVehiculoPlaca(String placa);
     List<OrdenReparacion> findByEstadoOrderByFechaDeEntregaRealDesc(Estado estado);
+    List<OrdenReparacion> findByEstadoAndValoracionIsNull(Estado estado);
 
 }

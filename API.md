@@ -47,7 +47,7 @@ Paso 4 del cambio de etapa: `PATCH /api/orden/{id}/entregar-orden` (reglas en CL
 - [ ] Quitar de la base compartida la columna `usuario.id_tecnico` y su FK (ver sección 4).
 
 **2. Seguridad**
-- [ ] **Control por rol** según la tabla de acceso de CLAUDE.md (`hasAnyRole` en `SecurityConfig`).
+- [ ] **Control por rol** según la tabla de acceso de CLAUDE.md (`hasAnyRole` en `SecurityConfig`). **Lo hace Williams (2026-10-24).**
 - [ ] CORS: bean `CorsConfigurationSource` y quitar los 6 `@CrossOrigin("*")`.
 - [ ] Usuario semilla (`CommandLineRunner`) para cualquier base nueva.
 
@@ -77,7 +77,8 @@ Paso 4 del cambio de etapa: `PATCH /api/orden/{id}/entregar-orden` (reglas en CL
 - [ ] Sincronizar `ubicacionActual` al crear una `Observacion` con ubicación.
 - [x] Observaciones (solo texto) (2026-10-24, rama `feature/observaciones`): `POST`/`GET /api/orden/{idOrden}/observaciones` con `ObservacionesService` + `ObservacionController`. Etapa solo visitada (o `NULL` = Entrega, solo en `CERRADA`); `CANCELADA` → 409; ubicación y estado de repuestos opcionales: si viene ubicación actualiza `ubicacionActual` (si no, hereda la de la orden). 21 casos con curl OK + regresión de etapa, entrega y fechas. **Decisión de ubicación opcional tomada por la recomendación; Adrian no la contradijo.**
 - [ ] Imágenes de observaciones (bloqueado: decidir dónde se guardan las fotos).
-- [ ] `Valoracion` + detalle + imágenes + PDF/ZIP (la primera valoración marca `fechaIngresoCotizar` si falta; `gravedad` solo con `REPARACION`).
+- [ ] **Valoración (sin fotos)** ← SIGUIENTE (rama `feature/valoracion`, guía dada el 2026-10-24): crear/obtener/editar en `/api/orden/{idOrden}/valoracion`, `PATCH .../cesvi`, listados `/api/valoracion/sin-valorar` y `/api/valoracion?cargadaCesvi=`. **Nuevo campo `ValoracionDetalle.cantidad`** (`Short`, `NOT NULL`, default 1, pedido por Adrian para piezas como broches): requiere `ALTER TABLE valoracion_detalle ADD COLUMN cantidad SMALLINT NOT NULL DEFAULT 1;` a mano en las dos bases. Por defecto: costos (`costo`, `costoEstimado`, existen en las entidades pero no en los requisitos) fuera de los DTOs; gravedad obligatoria con REPARACION.
+- [ ] Fotos, PDF y ZIP de `Valoracion` (bloqueado por el almacenamiento de fotos) (la primera valoración marca `fechaIngresoCotizar` si falta; `gravedad` solo con `REPARACION`).
   - **Recordatorio (2026-10-24):** al guardar la primera valoración, `ValoracionService` debe llamar a `aplicarIngresoCotizar(orden, LocalDate.now())` de `OrdenReparacionService` **solo si** `orden.getFechaIngresoCotizar() == null` (nunca a `marcarIngresoCotizar`, que lanza 409 si ya está marcada). Hoy `aplicarIngresoCotizar` es `private`: hacerlo `public` en ese momento. Todavía no existe ninguna capa de Valoración.
 - [ ] Dashboard de alertas; `Notificaciones` WhatsApp `@Async` + `PlantillaMensaje`; `Modulo`/`RolModulo`.
 - **Decisión abierta:** dónde se guardan las fotos (disco, S3, Cloudinary). Bloquea Observaciones y Valoración.
@@ -158,7 +159,7 @@ Verificado contra el código el 2026-10-20.
 | `Notificaciones` | ✅ | `imagenesEnviadas` como `JSON`; 4 columnas sin `length`. Sin capas |
 | `PlantillaMensaje` | ✅ | Sin FK (se consulta por `evento`). Sin capas; tabla vacía |
 
-- **Estilo de accesores:** con Lombok → `Persona`, `Cliente`, `Tecnico`, `Vehiculo`, `Usuario`, `OrdenReparacion`, `Etapas`. A mano → `Modulo`, `RolModulo`, `HistorialEtapas`, `OrdenEtapaFecha`, `Valoracion`, `ValoracionDetalle`, `ValoracionImagen`, `Observacion`, `ImagenObservacion`, `Notificaciones`, `PlantillaMensaje`.
+- **Estilo de accesores:** con Lombok → `Persona`, `Cliente`, `Tecnico`, `Vehiculo`, `Usuario`, `OrdenReparacion`, `Etapas`, `Valoracion` y `ValoracionDetalle` (estas dos pasadas a Lombok por Adrian el 2026-10-24, rama `feature/valoracion`). A mano → `Modulo`, `RolModulo`, `HistorialEtapas`, `OrdenEtapaFecha`, `ValoracionImagen`, `Observacion`, `ImagenObservacion`, `Notificaciones`, `PlantillaMensaje`.
 - **Timestamps:** `createAt` + `updateAt` en `Cliente`, `Tecnico`, `Vehiculo`, `OrdenReparacion`, `Valoracion`; solo `createAt` en `Observacion`, `ImagenObservacion`, `ValoracionImagen`, `Notificaciones`; ninguno en `Usuario`.
 - **Relaciones inversas mapeadas:** `Cliente.vehiculos`, `Vehiculo.ordenesReparacion`, `Modulo.rolesModulo`, `OrdenReparacion.{historialEtapas, ordenEtapaFechas, valoracion}`, `Valoracion.{detalles, imagenes}`, `Observacion.imagenes`.
 - Ninguna relación usa `FetchType.LAZY`. Ninguna entidad tiene callbacks ni métodos de negocio.
