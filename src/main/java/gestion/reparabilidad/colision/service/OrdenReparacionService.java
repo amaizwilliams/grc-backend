@@ -103,7 +103,7 @@ public class OrdenReparacionService {
         return convertirADto(ordenReparacionRepository.save(orden));
     }
 
-    private OrdenReparacion buscarOrden(Long id) {
+    public OrdenReparacion buscarOrden(Long id) {
         return ordenReparacionRepository.findById(id)
                 .orElseThrow(() -> new RecursoNoEncontradoException("No existe la orden de reparación con id " + id));
     }
@@ -180,7 +180,7 @@ public class OrdenReparacionService {
     }
 
     // El filtro JWT deja el email del usuario como nombre de la autenticación
-    private Usuario buscarUsuarioAutenticado() {
+    public Usuario buscarUsuarioAutenticado() {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         return usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Usuario autenticado no encontrado"));
