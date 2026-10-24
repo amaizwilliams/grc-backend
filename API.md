@@ -8,33 +8,40 @@ Al cerrar un bloque se actualizan: "Retomar aquí", "Pendientes", "Estado de los
 
 ---
 
-## 1. Retomar aquí (actualizado 2026-10-24)
+## 1. Retomar aquí (actualizado 2026-10-24, fin de la sesión)
 
-**Repo:** `develop` = `000afc7` (PR #9, cambio de etapa, mergeado). `main` va ~48 commits atrás. `./mvnw test` pasa.
-Cambio local sin commitear en `application.properties`: solo 4 líneas en blanco → descartar con `git restore` antes de crear la rama.
+**Repo:** `develop` = `8fe995b` (fechas, entrega, entregadas y observaciones ya mergeados). Rama en curso: **`feature/valoracion`**, todo **sin commit** todavía. `main` va muy atrás de `develop`.
 
-**Base en uso:** la **local** (XAMPP), porque en la universidad la red bloquea Tailscale. Ver sección 5.
+**Base en uso:** la **local** (XAMPP, MariaDB 10.4), porque en la universidad la red bloquea Tailscale. Ver sección 5.
 
-### Hecho: fechas del ciclo de vida — rama `feature/fechas-orden`
-Se hace antes de `/entregar` (decidido 2026-10-24): hoy la API no puede meter una orden al Kanban (cambio de etapa y entrega exigen `fechaIngresoReparacion`, y nada la llena), es el orden real del ciclo y Valoración reutilizará la lógica de cotizar.
+### En curso: Valoración (sin fotos) — rama `feature/valoracion`
+**Hecho y probado (20 casos con curl, base local restaurada después):**
+- `ALTER TABLE valoracion_detalle ADD COLUMN cantidad SMALLINT NOT NULL DEFAULT 1;` aplicado **solo en la base local**. **Falta en la compartida** (hacerlo a mano antes de arrancar con este código contra ella).
+- Entidad `ValoracionDetalle.cantidad` (`Short`, default 1). `Valoracion` y `ValoracionDetalle` pasadas a **Lombok** por Adrian (avisar a Williams).
+- Repositorios: `ValoracionRepository` (`findBy...`/`existsByOrdenReparacionIdOrdenReparacion`, `findByCargadaCesvi`), `ValoracionDetalleRepository` (`deleteByValoracionIdValoracion`), y `OrdenReparacionRepository.findByEstadoAndValoracionIsNull`.
+- DTOs en `dto/valoracion/`: `ValoracionRequestDto` (`descripcionGeneral`, `detalles` con `@NotEmpty` + `List<@Valid ...>`), `ValoracionDetalleRequestDto` (`pieza`, `accion`, `gravedad`, `cantidad` `Integer` 1–999 opcional, `observacion`), y sus `ResponseDto`.
+- `ValoracionService`: `crearValoracion` (orden 404 → `validarActiva` → ya tiene valoración 409 → `validarDetalles` → guarda valoración y piezas → marca `fechaIngresoCotizar` si falta) y `obtenerValoracion` (404 si la orden no existe o no tiene valoración). Privados: `validarDetalles`, `guardarDetalles`, `limpiar`, `convertirADto` (SUSTITUCION primero, alfabético por pieza) y `convertirDetalleADto`.
+- En `OrdenReparacionService` pasaron a `public`: `validarActiva` y `aplicarIngresoCotizar`.
+- `ValoracionController` (sin `@RequestMapping` de clase, ruta completa por método): `POST` y `GET /api/orden/{idOrden}/valoracion`.
 
-Especificación propuesta (todos responden 200 con `OrdenReparacionResponseDto`, `@Transactional`, asignan `updateAt`):
+**Falta (pasos 4c–4e y 5 de la guía):**
+1. `editarValoracion` → `PUT /api/orden/{idOrden}/valoracion`: mismas validaciones que crear (salvo: sin valoración → 404); reemplazo completo de piezas (`deleteBy...` + `guardarDetalles`); actualiza `descripcionGeneral` y `updateAt`; **no** toca `cargadaCesvi`. Para la respuesta, usar la lista recién guardada, no `valoracion.getDetalles()`.
+2. `marcarCargadaCesvi` → `PATCH /api/orden/{idOrden}/valoracion/cesvi`: sin valoración → 404; ya marcada → 409; `cargadaCesvi = true` + `cargadaCesviAt`.
+3. Listados: `GET /api/valoracion/sin-valorar` (órdenes `ACTIVA` sin valoración; requiere hacer `public` `OrdenReparacionService.convertirADto`) y `GET /api/valoracion?cargadaCesvi=true|false`.
+4. Pruebas finales (edición reemplaza piezas, CESVI 200/409, editar tras CESVI no lo resetea, listados cambian de grupo).
 
-| Endpoint | Body | Efecto |
-|---|---|---|
-| `PATCH /api/orden/{id}/ingreso-cotizar` | `FechaRequestDto(fecha)` | `fechaIngresoCotizar = fecha` |
-| `PATCH /api/orden/{id}/ingreso-reparacion` | `FechaRequestDto(fecha)` | `fechaIngresoReparacion = fecha` + `ubicacionActual = EN_TALLER` |
-| `PATCH /api/orden/{id}/dias-estimados` | `DiasEstimadosRequestDto(dias)` | `diasEstimadoEntrega` + `fechaDeEntregaEstimada = fechaIngresoReparacion.plusDays(dias)` |
+**Antes del commit:**
+- Cambiar el mensaje de `validarActiva` a "solo se puede modificar una orden activa" (hoy dice "marcar fechas" y lo ve también la valoración).
+- Descartar `ObservacionRepository` (solo tiene una línea en blanco): `git restore src/main/java/gestion/reparabilidad/colision/repository/ObservacionRepository.java`.
+- `@CrossOrigin(origins = "*")` en `ValoracionController` si el front lo necesita (como los demás).
 
-- DTOs (`record`, `dto/ordenReparacion`): `FechaRequestDto(@NotNull @PastOrPresent LocalDate fecha)` reutilizado en las dos fechas; `DiasEstimadosRequestDto(@NotNull @Min(1) @Max(30) dias)` — **tope de 30 días por decisión de Adrian (2026-10-24)**; pendiente confirmar con el taller que ninguna reparación pasa de un mes. Adrian lo dejó en `Byte`; se le recomendó `Integer` (con `Byte`, un valor ≥ 128 da el 400 genérico de Jackson en vez del mensaje del `@Max`; el Service haría `.byteValue()`).
-- Validaciones: orden 404; no `ACTIVA` → 409; fecha ya marcada → 409 ("una sola vez"); ingreso a reparación anterior a la fecha de cotizar (si existe) → 409; cotizar **no** es requisito del ingreso; días sin `fechaIngresoReparacion` → 409; días ya marcados → 409.
-- Separar `aplicarIngresoCotizar(orden, fecha)` (privado) para que Valoración lo llame con `LocalDate.now()` si la fecha está en `null`.
-- **El calendario deja elegir la fecha** (2026-10-24, se tomó la recomendación): `@PastOrPresent`, porque el asesor puede registrar al día siguiente. Si se cambia a "siempre hoy", los endpoints de fecha dejan de llevar body.
-- Rama: `feature/fechas-orden` (la que se creó como `feature/entregar-orden`, renombrada antes del push); lleva también el commit de `API.md` (`cb87293`). La entrega va en una rama nueva.
-- Casos con los datos locales: OT 1–3 (las tres fechas desde cero), OT 4 (cotizar ya marcado → 409; ingreso → 200), OT 5 (días → 200; ingreso otra vez → 409), OT 3 (días antes del ingreso → 409), OT 11/12 (no `ACTIVA` → 409).
+**Decisiones por defecto en Valoración (Adrian no las contradijo):** costos (`costo`, `costoEstimado`) fuera de los DTOs; `gravedad` obligatoria con REPARACION y prohibida con SUSTITUCION (409); `cantidad` en las dos acciones; crear/editar solo en `ACTIVA`; piezas sin `DELETE` propio (se eliminan reemplazando la lista en el `PUT`).
 
-### Hecho: entrega — rama `feature/entregar-orden`
-Paso 4 del cambio de etapa: `PATCH /api/orden/{id}/entregar-orden` (reglas en CLAUDE.md, "Entrega de la orden"). Probar con la OT 10 (Listo para entregar); OT 11/12 → 409 por estado; OT 1–4 → 409 por falta de fecha de ingreso.
+### Planeado: almacenamiento de fotos (propuesta 2026-10-24, sin confirmar)
+Disco local del servidor de Adrian (fuera de carpetas públicas, ruta en `FOTOS_DIR`), archivos con nombre UUID, en la base la ruta relativa; interfaz `AlmacenamientoService` para poder pasar a MinIO/S3; al subir: límite de tamaño, verificar tipo real, re-codificar, quitar EXIF (GPS), redimensionar y miniatura; acceso por **URLs firmadas HMAC de corta duración** (`/api/archivos/...?exp=&firma=`), que también sirven para WhatsApp; exponer el servidor con Cloudflare Tunnel; respaldo diario a disco externo + copia fuera de casa; UPS. **Pendiente que Adrian confirme:** el enfoque, cómo expone el servidor (¿dominio?), SO/disco del servidor y el volumen de fotos (estimado ~1,2 GB/mes con 30 fotos × 100 órdenes).
+
+### Lo que hace Williams
+Control por rol (`hasAnyRole` en `SecurityConfig`) — ver pendientes de Seguridad.
 
 ---
 
@@ -48,7 +55,7 @@ Paso 4 del cambio de etapa: `PATCH /api/orden/{id}/entregar-orden` (reglas en CL
 
 **2. Seguridad**
 - [ ] **Control por rol** según la tabla de acceso de CLAUDE.md (`hasAnyRole` en `SecurityConfig`). **Lo hace Williams (2026-10-24).**
-- [ ] CORS: bean `CorsConfigurationSource` y quitar los 6 `@CrossOrigin("*")`.
+- [ ] CORS: bean `CorsConfigurationSource` y quitar los `@CrossOrigin("*")` de todos los controllers (ver sección 3).
 - [ ] Usuario semilla (`CommandLineRunner`) para cualquier base nueva.
 
 **3. Modelo y catálogos**
@@ -73,15 +80,14 @@ Paso 4 del cambio de etapa: `PATCH /api/orden/{id}/entregar-orden` (reglas en CL
 - [x] Fechas del ciclo de vida (2026-10-24, rama `feature/fechas-orden`): 19 casos con curl OK en la base local.
 - [x] Entrega (2026-10-24, rama `feature/entregar-orden`): 12 casos con curl OK en la base local (ruta implementada: `PATCH /api/orden/{id}/entregar-orden`).
 - [x] `GET /api/orden/entregadas` (2026-10-24, rama `feature/entregar-orden`): `findByEstadoOrderByFechaDeEntregaRealDesc(CERRADA)`, más reciente primero. Probado. A futuro: limitar por días o paginar (la lista crece sin fin).
-- [ ] Mensaje de `validarActiva`: todavía dice "solo se pueden marcar fechas en una orden activa" y lo usan también la entrega y otros flujos → generalizar a "solo se puede modificar una orden activa".
+- [ ] Mensaje de `validarActiva` (ya es `public` y lo usan fechas, entrega y valoración): todavía dice "solo se pueden marcar fechas en una orden activa" → cambiar a "solo se puede modificar una orden activa".
 - [ ] Sincronizar `ubicacionActual` al crear una `Observacion` con ubicación.
 - [x] Observaciones (solo texto) (2026-10-24, rama `feature/observaciones`): `POST`/`GET /api/orden/{idOrden}/observaciones` con `ObservacionesService` + `ObservacionController`. Etapa solo visitada (o `NULL` = Entrega, solo en `CERRADA`); `CANCELADA` → 409; ubicación y estado de repuestos opcionales: si viene ubicación actualiza `ubicacionActual` (si no, hereda la de la orden). 21 casos con curl OK + regresión de etapa, entrega y fechas. **Decisión de ubicación opcional tomada por la recomendación; Adrian no la contradijo.**
 - [ ] Imágenes de observaciones (bloqueado: decidir dónde se guardan las fotos).
-- [ ] **Valoración (sin fotos)** ← SIGUIENTE (rama `feature/valoracion`, guía dada el 2026-10-24): crear/obtener/editar en `/api/orden/{idOrden}/valoracion`, `PATCH .../cesvi`, listados `/api/valoracion/sin-valorar` y `/api/valoracion?cargadaCesvi=`. **Nuevo campo `ValoracionDetalle.cantidad`** (`Short`, `NOT NULL`, default 1, pedido por Adrian para piezas como broches): requiere `ALTER TABLE valoracion_detalle ADD COLUMN cantidad SMALLINT NOT NULL DEFAULT 1;` a mano en las dos bases. Por defecto: costos (`costo`, `costoEstimado`, existen en las entidades pero no en los requisitos) fuera de los DTOs; gravedad obligatoria con REPARACION.
+- [ ] **Valoración (sin fotos)** ← EN CURSO (rama `feature/valoracion`): crear y obtener hechos y probados; faltan editar, CESVI y listados (ver sección 1).
 - [ ] Fotos, PDF y ZIP de `Valoracion` (bloqueado por el almacenamiento de fotos) (la primera valoración marca `fechaIngresoCotizar` si falta; `gravedad` solo con `REPARACION`).
-  - **Recordatorio (2026-10-24):** al guardar la primera valoración, `ValoracionService` debe llamar a `aplicarIngresoCotizar(orden, LocalDate.now())` de `OrdenReparacionService` **solo si** `orden.getFechaIngresoCotizar() == null` (nunca a `marcarIngresoCotizar`, que lanza 409 si ya está marcada). Hoy `aplicarIngresoCotizar` es `private`: hacerlo `public` en ese momento. Todavía no existe ninguna capa de Valoración.
 - [ ] Dashboard de alertas; `Notificaciones` WhatsApp `@Async` + `PlantillaMensaje`; `Modulo`/`RolModulo`.
-- **Decisión abierta:** dónde se guardan las fotos (disco, S3, Cloudinary). Bloquea Observaciones y Valoración.
+- **Decisión abierta:** almacenamiento de fotos — hay propuesta (disco local + URLs firmadas, ver sección 1), falta que Adrian la confirme. Bloquea las imágenes de Observaciones y de Valoración.
 
 **6. Operación / producción**
 - [ ] Flyway en vez de `ddl-auto=update` (urgente con la base compartida); `show-sql=false`; `open-in-view=false`; paginación; HTTPS con proxy; respaldos.
@@ -102,6 +108,8 @@ Todos los DTOs son `record`; ningún controlador devuelve una entidad.
 | `Vehiculo` | `/api/vehiculo` | GET `/{id}`, GET `/placa/{placa}`, GET lista, GET `/desactivados`, POST, DELETE (lógico), PATCH `/{id}/reactivar`. Sin update (a propósito) |
 | `OrdenReparacion` | `/api/orden` | POST, PUT `/{id}` (solo `ACTIVA`), DELETE `/{id}` (→ `CANCELADA`), PATCH `/{id}/reactivar` (solo desde `CANCELADA`), GET `/{id}`, GET (activas), GET `/entregadas` (CERRADA, la más reciente primero), GET `/placa/{placa}`, PATCH `/{id}/etapa`, PATCH `/{id}/ingreso-cotizar`, PATCH `/{id}/ingreso-reparacion`, PATCH `/{id}/dias-estimados`, PATCH `/{id}/entregar-orden` |
 | `Etapas` | `/api/etapa` | GET lista (por `orden`), GET `/{id}`, POST, PUT `/{id}`. Sin DELETE, a propósito |
+| `Observacion` | `/api/orden/{idOrden}/observaciones` | POST (201), GET (la más reciente primero). `ObservacionesService` + `ObservacionController` |
+| `Valoracion` | `/api/orden/{idOrden}/valoracion` | POST (201), GET. **En curso:** PUT, PATCH `/cesvi`, `GET /api/valoracion/sin-valorar`, `GET /api/valoracion?cargadaCesvi=` |
 
 Infraestructura:
 - `config/SecurityConfig` + `config/JwtAuthenticationFilter` + `config/SecurityErrorWriter`, `service/JwtService`, `service/CustomUserDetailsService`.
@@ -151,10 +159,10 @@ Verificado contra el código el 2026-10-20.
 | `OrdenReparacion` | ✅ | Lombok (sin constructor completo). `etapaActual` y fechas nullable; `usuarioCreador` `NOT NULL`; `ubicacionActual` nullable. 4 `@ManyToOne` EAGER. Con capas + cambio de etapa |
 | `HistorialEtapas` | ✅ | A mano. Log append-only: orden, etapa, usuario, `fechaCambio` |
 | `OrdenEtapaFecha` | ✅ | A mano. `tecnico` nullable, `fechaInicio`, `fechaFin`, `completada`. **El UNIQUE(orden, etapa) no está declarado en la entidad** (ver Hallazgos) |
-| `Valoracion` | ✅ | `@OneToOne` con `id_orden_reparacion` UNIQUE; `descripcionGeneral` (500); `usuario` `NOT NULL`. Sin cascada. Sin capas |
-| `ValoracionDetalle` | ✅ | Regla de `gravedad` en el Service. Sin capas |
+| `Valoracion` | ✅ | **Lombok desde 2026-10-24.** `@OneToOne` con `id_orden_reparacion` UNIQUE; `descripcionGeneral` (500); `usuario` `NOT NULL`; `costoEstimado` sin uso. Sin cascada. Capas en curso |
+| `ValoracionDetalle` | ✅ | **Lombok desde 2026-10-24.** `cantidad` (`Short`, `NOT NULL`, default 1; columna agregada a mano). Regla de `gravedad` en el Service; `costo` sin uso. Sin Service propio (lo maneja `ValoracionService`) |
 | `ValoracionImagen` | ✅ | `url` (2083), `descripcion` (300, sin uso funcional, se conserva). Sin capas |
-| `Observacion` | ✅ | `nota` (500); única con cascada a `imagenes`. Sin capas (solo repositorio) |
+| `Observacion` | ✅ | `nota` (500); única con cascada a `imagenes`. Con capas (`ObservacionesService`, `ObservacionController`) |
 | `ImagenObservacion` | ✅ | PK `idImagenesObservacion`. Sin capas |
 | `Notificaciones` | ✅ | `imagenesEnviadas` como `JSON`; 4 columnas sin `length`. Sin capas |
 | `PlantillaMensaje` | ✅ | Sin FK (se consulta por `evento`). Sin capas; tabla vacía |
@@ -332,4 +340,4 @@ Decisiones confirmadas por pantalla. Las reglas transversales (etapas, fechas, e
 - **2026-10-18:** DTOs a `record` + `ResponseDto` (`a763d8c`); JWT (`eab142f`); capas de `OrdenReparacion` (`d66a543`, PR #6); `PlacaUtil`, `DocumentoUtil`; paso a la base compartida; PR #7 (Usuario: excepciones propias, `UsuarioUpdateDto`, `EmailUtil`, sin relación con `Tecnico`); `OrdenReparacion` y `Etapas` con Lombok; `ubicacionActual` en `OrdenReparacion`.
 - **2026-10-20:** `Etapas` con `diasLimiteCritico` y `especialidad`, capas completas y catálogo cargado (`3a62605`, PR #8). Bancada y Listo para entregar sin técnico.
 - **2026-10-22:** "Entregado" deja de ser etapa (fila id 10 borrada de la compartida) → evento `/entregar`; regla de movimiento "versión A"; cambio de etapa pasos 1–3 (`0dc66be`, PR #9 → `000afc7`).
-- **2026-10-24:** BD local en XAMPP (la red de la universidad bloquea Tailscale): FKs/UNIQUE a mano y datos de prueba. Hallazgo del UNIQUE faltante en `OrdenEtapaFecha`. Se decide hacer las fechas del ciclo de vida antes de `/entregar`; Adrian las implementa y pasan 19 casos con curl. Reparación del MariaDB local. CLAUDE.md se separa en reglas (CLAUDE.md) y estado (API.md); **API.md sí se versiona** (repo público: sin contraseñas, IPs ni correos personales).
+- **2026-10-24:** BD local en XAMPP (la red de la universidad bloquea Tailscale): FKs/UNIQUE a mano y datos de prueba. Hallazgo del UNIQUE faltante en `OrdenEtapaFecha`. Se decide hacer las fechas del ciclo de vida antes de `/entregar`; Adrian las implementa y pasan 19 casos con curl. Reparación del MariaDB local. CLAUDE.md se separa en reglas (CLAUDE.md) y estado (API.md); **API.md sí se versiona** (repo público: sin contraseñas, IPs ni correos personales). Mismo día, más tarde: se repara el MariaDB local (tablas del sistema dañadas por un cierre inesperado); fechas, entrega, `GET /entregadas` y observaciones mergeados en `develop` (`8fe995b`); el login devuelve `token` + `usuario` (Williams, `c3706c5`); se borra `docs/` del repo (`5f2c7c1`); propuesta de almacenamiento de fotos; Valoración: campo `cantidad` (pedido por Adrian), crear y obtener hechos y probados en `feature/valoracion` (sin commit).
