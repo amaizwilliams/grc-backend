@@ -1,5 +1,7 @@
 package gestion.reparabilidad.colision.service;
 
+import gestion.reparabilidad.colision.dto.LoginResponse;
+import gestion.reparabilidad.colision.dto.usuario.UsuarioResponseDto;
 import gestion.reparabilidad.colision.exception.CredencialesInvalidasException;
 import gestion.reparabilidad.colision.exception.UsuarioInactivoException;
 import gestion.reparabilidad.colision.modelo.Usuario;
@@ -21,7 +23,7 @@ public class AuthService {
         this.jwtService = jwtService;
     }
 
-    public String login(String email, String passwordPlana) {
+    public LoginResponse login(String email, String passwordPlana) {
         Usuario usuario = usuarioRepository.findByEmail(EmailUtil.normalizar(email))
                 .orElseThrow(() -> new CredencialesInvalidasException("Email o contraseña incorrectos"));
 
@@ -33,6 +35,14 @@ public class AuthService {
             throw new CredencialesInvalidasException("Email o contraseña incorrectos");
         }
 
-        return jwtService.generarToken(usuario);
+        String token = jwtService.generarToken(usuario);
+        UsuarioResponseDto usuarioDto = new UsuarioResponseDto(
+                usuario.getIdUsuario(),
+                usuario.getNombre(),
+                usuario.getEmail(),
+                usuario.getRol(),
+                usuario.getActivo()
+        );
+        return new LoginResponse(token, usuarioDto);
     }
 }
