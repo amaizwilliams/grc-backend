@@ -14,4 +14,6 @@ public interface OrdenEtapaFechaRepository extends JpaRepository<OrdenEtapaFecha
 
     boolean existsByOrdenReparacionIdOrdenReparacionAndEtapaIdEtapa(Long idOrden, Long idEtapa);
 
+    long countByTecnicoIdPersonaAndFechaFinIsNull(Long idTecnico);
+
 }
