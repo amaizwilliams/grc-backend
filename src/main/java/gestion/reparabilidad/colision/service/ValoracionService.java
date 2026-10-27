@@ -1,12 +1,12 @@
 package gestion.reparabilidad.colision.service;
 
-import gestion.reparabilidad.colision.dto.valoracion.ValoracionDetalleRequestDto;
-import gestion.reparabilidad.colision.dto.valoracion.ValoracionDetalleResponseDto;
-import gestion.reparabilidad.colision.dto.valoracion.ValoracionRequestDto;
-import gestion.reparabilidad.colision.dto.valoracion.ValoracionResponseDto;
+import gestion.reparabilidad.colision.dto.ordenReparacion.OrdenReparacionResponseDto;
+import gestion.reparabilidad.colision.dto.valoracion.*;
 import gestion.reparabilidad.colision.exception.RecursoNoEncontradoException;
 import gestion.reparabilidad.colision.exception.ReglaNegocioException;
 import gestion.reparabilidad.colision.modelo.Enums.Accion;
+import gestion.reparabilidad.colision.modelo.Enums.Estado;
+import gestion.reparabilidad.colision.modelo.Enums.FiltroValoracion;
 import gestion.reparabilidad.colision.modelo.OrdenReparacion;
 import gestion.reparabilidad.colision.modelo.Valoracion;
 import gestion.reparabilidad.colision.modelo.ValoracionDetalle;
@@ -67,7 +67,7 @@ public class ValoracionService {
     }
 
     @Transactional
-    public ValoracionResponseDto crearValoracion(Long idOrden, ValoracionRequestDto request){
+    public ValoracionResponseDto crearValoracion(Long idOrden, ValoracionRequestDto request) {
         OrdenReparacion orden = ordenReparacionService.buscarOrden(idOrden);
         ordenReparacionService.validarActiva(orden);
         if (valoracionRepository.existsByOrdenReparacionIdOrdenReparacion(idOrden)) {
@@ -90,6 +90,21 @@ public class ValoracionService {
 
         return convertirADto(valoracion, detalles);
 
+    }
+
+    @Transactional
+    public ValoracionResponseDto editarValoracion(Long idOrden, ValoracionRequestDto request) {
+        OrdenReparacion orden = ordenReparacionService.buscarOrden(idOrden);
+        ordenReparacionService.validarActiva(orden);
+        Valoracion valoracion = valoracionRepository.findByOrdenReparacionIdOrdenReparacion(idOrden)
+                .orElseThrow(() -> new RecursoNoEncontradoException("La orden " + idOrden + " no tiene valoración"));
+        validarDetalles(request.detalles());
+        valoracion.setDescripcionGeneral(limpiar(request.descripcionGeneral()));
+        valoracion.setUpdateAt(LocalDateTime.now());
+        valoracionRepository.save(valoracion);
+        valoracionDetalleRepository.deleteByValoracionIdValoracion(valoracion.getIdValoracion());
+        List<ValoracionDetalle> detalles = guardarDetalles(valoracion, request.detalles());
+        return convertirADto(valoracion, detalles);
     }
 
     private ValoracionResponseDto convertirADto(Valoracion valoracion, List<ValoracionDetalle> detalles) {
@@ -136,5 +151,45 @@ public class ValoracionService {
         return convertirADto(valoracion, valoracion.getDetalles());
     }
 
+    @Transactional(readOnly = true)
+    public List<OrdenReparacionResponseDto> listarOrdenesPorFiltro(FiltroValoracion filtro) {
+        List<OrdenReparacion> ordenes = switch (filtro) {
+            case SIN_VALORAR -> ordenReparacionRepository.findByEstadoAndValoracionIsNull(Estado.ACTIVA);
+            case SIN_CARGAR ->
+                    ordenReparacionRepository.findByValoracionCargadaCesviAndEstadoNot(false, Estado.CANCELADA);
+            case CARGADAS -> ordenReparacionRepository.findByValoracionCargadaCesviAndEstadoNot(true, Estado.CANCELADA);
+        };
+        return ordenes.stream()
+                .map(ordenReparacionService::convertirADto)
+                .toList();
+    }
+
+    @Transactional
+    public ValoracionResponseDto marcarCargadaCesvi(Long idOrden) {
+        OrdenReparacion orden = ordenReparacionService.buscarOrden(idOrden);
+        if (orden.getEstado() == Estado.CANCELADA) {
+            throw new ReglaNegocioException("La orden " + idOrden + " está cancelada");
+        }
+        Valoracion valoracion = valoracionRepository.findByOrdenReparacionIdOrdenReparacion(idOrden)
+                .orElseThrow(() -> new RecursoNoEncontradoException("La orden " + idOrden + " no tiene valoración"));
+        if (Boolean.TRUE.equals(valoracion.getCargadaCesvi())) {
+            throw new ReglaNegocioException("La valoración de la orden " + idOrden + " ya está cargada a CESVI");
+        }
+        LocalDateTime ahora = LocalDateTime.now();
+        valoracion.setCargadaCesvi(true);
+        valoracion.setCargadaCesviAt(ahora);
+        valoracion.setUpdateAt(ahora);
+        valoracionRepository.save(valoracion);
+        return convertirADto(valoracion, valoracion.getDetalles());
+    }
+
+    @Transactional(readOnly = true)
+    public ConteoValoracionResponseDto contarPorFiltro() {
+        long sinValorar = ordenReparacionRepository.countByEstadoAndValoracionIsNull(Estado.ACTIVA);
+        long sinCargar = ordenReparacionRepository.countByValoracionCargadaCesviAndEstadoNot(false, Estado.CANCELADA);
+        long cargadas = ordenReparacionRepository.countByValoracionCargadaCesviAndEstadoNot(true, Estado.CANCELADA);
+        return new ConteoValoracionResponseDto(sinValorar, sinCargar, cargadas);
+
+    }
 
 }
