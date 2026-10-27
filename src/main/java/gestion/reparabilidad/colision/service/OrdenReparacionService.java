@@ -295,7 +295,7 @@ public class OrdenReparacionService {
 
     }
 
-    private OrdenReparacionResponseDto convertirADto(OrdenReparacion ordenReparacion) {
+    public OrdenReparacionResponseDto convertirADto(OrdenReparacion ordenReparacion) {
         Etapas etapa = ordenReparacion.getEtapaActual();
         return new OrdenReparacionResponseDto(
                 ordenReparacion.getIdOrdenReparacion(),

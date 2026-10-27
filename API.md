@@ -4,94 +4,126 @@ Bitácora y estado vivo del backend: qué está hecho, qué sigue, pendientes, d
 
 Al cerrar un bloque se actualizan: "Retomar aquí", "Pendientes", "Estado de los módulos" y la "Bitácora".
 
-**Última verificación contra el código:** 2026-10-24 (módulos y entidades verificados el 2026-10-20; cambios posteriores anotados en la bitácora).
+**Última verificación contra el código:** 2026-10-26 (Valoración completa en `feature/valoracion-editar`; esquema de la compartida comparado contra el modelo). La revisión completa anterior es del 2026-10-25.
 
 ---
 
-## 1. Retomar aquí (actualizado 2026-10-24, fin de la sesión)
+## 1. Retomar aquí (actualizado 2026-10-25)
 
-**Repo:** `develop` = `8fe995b` (fechas, entrega, entregadas y observaciones ya mergeados). Rama en curso: **`feature/valoracion`**, todo **sin commit** todavía. `main` va muy atrás de `develop`.
+**Repo:** `develop` = `1368240` (PR #18, Valoración crear/obtener). Árbol limpio. `main` va muy atrás de `develop`. `./mvnw test` pasa (solo existe `contextLoads`).
 
-**Base en uso:** la **local** (XAMPP, MariaDB 10.4), porque en la universidad la red bloquea Tailscale. Ver sección 5.
+**Base en uso:** la **local** (XAMPP, MariaDB 10.4) cuando la red bloquea Tailscale. Ver sección 5.
 
-### En curso: Valoración (sin fotos) — rama `feature/valoracion`
-**Hecho y probado (20 casos con curl, base local restaurada después):**
-- `ALTER TABLE valoracion_detalle ADD COLUMN cantidad SMALLINT NOT NULL DEFAULT 1;` aplicado **solo en la base local**. **Falta en la compartida** (hacerlo a mano antes de arrancar con este código contra ella).
-- Entidad `ValoracionDetalle.cantidad` (`Short`, default 1). `Valoracion` y `ValoracionDetalle` pasadas a **Lombok** por Adrian (avisar a Williams).
-- Repositorios: `ValoracionRepository` (`findBy...`/`existsByOrdenReparacionIdOrdenReparacion`, `findByCargadaCesvi`), `ValoracionDetalleRepository` (`deleteByValoracionIdValoracion`), y `OrdenReparacionRepository.findByEstadoAndValoracionIsNull`.
-- DTOs en `dto/valoracion/`: `ValoracionRequestDto` (`descripcionGeneral`, `detalles` con `@NotEmpty` + `List<@Valid ...>`), `ValoracionDetalleRequestDto` (`pieza`, `accion`, `gravedad`, `cantidad` `Integer` 1–999 opcional, `observacion`), y sus `ResponseDto`.
-- `ValoracionService`: `crearValoracion` (orden 404 → `validarActiva` → ya tiene valoración 409 → `validarDetalles` → guarda valoración y piezas → marca `fechaIngresoCotizar` si falta) y `obtenerValoracion` (404 si la orden no existe o no tiene valoración). Privados: `validarDetalles`, `guardarDetalles`, `limpiar`, `convertirADto` (SUSTITUCION primero, alfabético por pieza) y `convertirDetalleADto`.
-- En `OrdenReparacionService` pasaron a `public`: `validarActiva` y `aplicarIngresoCotizar`.
-- `ValoracionController` (sin `@RequestMapping` de clase, ruta completa por método): `POST` y `GET /api/orden/{idOrden}/valoracion`.
+**Ya está en `develop` (antes figuraba como pendiente):** Valoración `POST`/`GET`; Usuario con `/desactivados` y `/reactivar` (`a4f7095`); CORS centralizado en `SecurityConfig` leyendo `CORS_ALLOWED_ORIGINS` del `.env` (`724789a`); columna "En curso" de técnicos (`enCurso` en `TecnicoResponseDto`, `25ebac7`); el mensaje de `validarActiva` ya dice "solo se puede modificar una orden activa".
 
-**Falta (pasos 4c–4e y 5 de la guía):**
-1. `editarValoracion` → `PUT /api/orden/{idOrden}/valoracion`: mismas validaciones que crear (salvo: sin valoración → 404); reemplazo completo de piezas (`deleteBy...` + `guardarDetalles`); actualiza `descripcionGeneral` y `updateAt`; **no** toca `cargadaCesvi`. Para la respuesta, usar la lista recién guardada, no `valoracion.getDetalles()`.
-2. `marcarCargadaCesvi` → `PATCH /api/orden/{idOrden}/valoracion/cesvi`: sin valoración → 404; ya marcada → 409; `cargadaCesvi = true` + `cargadaCesviAt`.
-3. Listados: `GET /api/valoracion/sin-valorar` (órdenes `ACTIVA` sin valoración; requiere hacer `public` `OrdenReparacionService.convertirADto`) y `GET /api/valoracion?cargadaCesvi=true|false`.
-4. Pruebas finales (edición reemplaza piezas, CESVI 200/409, editar tras CESVI no lo resetea, listados cambian de grupo).
+### Revisión completa del 2026-10-25 — orden sugerido
+Antes de conectar el front, en este orden (detalle de cada punto en la sección 2):
+1. **Corregir los errores E1–E7** (sección 2.0): cancelar una orden cerrada, etapa abierta al cancelar, cambio de vehículo, filtro JWT en el login, `@CrossOrigin` sobrante, enumeración de usuarios inactivos, último ADMIN.
+2. **Acordar el contrato con el front** (sección 2.1): las rutas del front (`/ordenes`, `POST`, etc.) no coinciden con las del backend, y la "vista de orden" del front pide campos que el backend no calcula.
+3. **Endpoints que faltan para las pantallas** (sección 2.2): etapas/historial de la orden, campos de Kanban y ficha, dashboard, terminar Valoración, nueva orden compuesta, `/api/auth/me`, control por rol.
+4. Mejoras no bloqueantes (sección 2.3).
 
-**Antes del commit:**
-- Cambiar el mensaje de `validarActiva` a "solo se puede modificar una orden activa" (hoy dice "marcar fechas" y lo ve también la valoración).
-- Descartar `ObservacionRepository` (solo tiene una línea en blanco): `git restore src/main/java/gestion/reparabilidad/colision/repository/ObservacionRepository.java`.
-- `@CrossOrigin(origins = "*")` en `ValoracionController` si el front lo necesita (como los demás).
+### Próxima sesión (dejado el 2026-10-26)
+- **Valoración terminada (salvo fotos/PDF/ZIP)** en `feature/valoracion-editar`, sin commit: editar, CESVI, listados por filtro y conteo, probados con curl en la compartida (ver bitácora). E10 corregido y probado (400). Falta: commit y PR a `develop`.
+- Siguiente bloque: **errores E1–E4** (sección 2.0).
+- **Edición = reemplazo completo** (decidido): el front manda **la hoja entera**; si manda solo las piezas nuevas, las demás se pierden. Las piezas que no cambian se reinsertan con id nuevo (hoy nada apunta a `valoracion_detalle`). Si algún día hace falta un id estable (p. ej. un costo por pieza), pasar a "por diferencias": `idValoracionDetalle` opcional en el DTO, validando que pertenezca a esa valoración. Caso extra de prueba: 5 piezas A–E → PUT con A, B, F, G, H → quedan 5.
+- **Propuesta de Python (sin confirmar):** las alertas del Dashboard van en Java (son consultas simples, deben ser instantáneas y reutilizan `convertirADto` y la seguridad). Los **reportes** (entregas por mes, tiempos por etapa, carga por técnico, Excel) en una carpeta `reportes/` dentro de este repo, ejecutados por Spring con `ProcessBuilder` (el front ve una sola API y un solo JWT). Requiere Python en el servidor y un usuario MySQL de solo lectura. Falta que el taller defina qué reportes quiere.
+- **Hallazgo en el mock del front:** `calcularAlertas` cuenta "Fuera del taller" sin filtrar por estado, así que incluiría las órdenes entregadas. El backend debe contar solo las `ACTIVA`. "Movimientos recientes" no registra el marcado de fechas (es `LocalDate` sin hora): si se quiere, hace falta una tabla de eventos.
 
-**Decisiones por defecto en Valoración (Adrian no las contradijo):** costos (`costo`, `costoEstimado`) fuera de los DTOs; `gravedad` obligatoria con REPARACION y prohibida con SUSTITUCION (409); `cantidad` en las dos acciones; crear/editar solo en `ACTIVA`; piezas sin `DELETE` propio (se eliminan reemplazando la lista en el `PUT`).
+### Valoración — lo que falta
+- Fotos, vista PDF y ZIP (bloqueado por el almacenamiento de fotos).
+- `ValoracionRepository.findByCargadaCesvi` quedó sin uso (los listados filtran desde `OrdenReparacionRepository`).
+
+**Decisiones en Valoración:** costos (`costo`, `costoEstimado`) fuera de los DTOs; `gravedad` obligatoria con REPARACION y prohibida con SUSTITUCION (409); `cantidad` en las dos acciones; crear/editar solo en `ACTIVA`; piezas sin `DELETE` propio (se eliminan reemplazando la lista en el `PUT`). **CESVI** se puede marcar en `ACTIVA` y `CERRADA` (la carga suele ser después de entregar), no en `CANCELADA`; marcar dos veces → 409 (no se pisa `cargadaCesviAt`). **Filtros:** `SIN_VALORAR` = `ACTIVA` sin valoración; `SIN_CARGAR` / `CARGADAS` = con valoración y `cargadaCesvi` false/true, estado ≠ `CANCELADA`. Cada orden cae en un solo filtro; las canceladas en ninguno. El conteo usa los mismos criterios que las listas.
 
 ### Planeado: almacenamiento de fotos (propuesta 2026-10-24, sin confirmar)
 Disco local del servidor de Adrian (fuera de carpetas públicas, ruta en `FOTOS_DIR`), archivos con nombre UUID, en la base la ruta relativa; interfaz `AlmacenamientoService` para poder pasar a MinIO/S3; al subir: límite de tamaño, verificar tipo real, re-codificar, quitar EXIF (GPS), redimensionar y miniatura; acceso por **URLs firmadas HMAC de corta duración** (`/api/archivos/...?exp=&firma=`), que también sirven para WhatsApp; exponer el servidor con Cloudflare Tunnel; respaldo diario a disco externo + copia fuera de casa; UPS. **Pendiente que Adrian confirme:** el enfoque, cómo expone el servidor (¿dominio?), SO/disco del servidor y el volumen de fotos (estimado ~1,2 GB/mes con 30 fotos × 100 órdenes).
 
 ### Lo que hace Williams
-Control por rol (`hasAnyRole` en `SecurityConfig`) — ver pendientes de Seguridad.
+Control por rol (`hasAnyRole` en `SecurityConfig`) — ver 2.2.
 
 ---
 
 ## 2. Pendientes vigentes
 
-**1. Usuario / Auth (compañero)**
-- [ ] `findByActivoTrue/False` + `GET /desactivados` + `PATCH /{id}/reactivar`.
-- [ ] No aceptar el rol `TECNICO` en alta/edición.
-- [ ] Mover `LoginRequest` a `dto/auth` (menor).
-- [ ] Quitar de la base compartida la columna `usuario.id_tecnico` y su FK (ver sección 4).
+### 2.0 Errores encontrados en la revisión del 2026-10-25 (corregir antes del front)
+- [ ] **E1 — Se puede cancelar una orden `CERRADA`.** `OrdenReparacionService.deleteOrdenById` no valida el estado; luego `reactivar` la deja `ACTIVA` con `fechaDeEntregaReal` y `FUERA_DE_TALLER`. Permitir cancelar solo `ACTIVA` (409 en otro caso).
+- [ ] **E2 — Cancelar deja la `OrdenEtapaFecha` abierta**: el técnico sigue contando esa orden en "En curso". Cerrarla al cancelar (y decidir qué pasa al reactivar).
+- [ ] **E3 — `updateOrden` permite cambiar el vehículo** de una orden con etapas, valoración y observaciones (el historial queda en otro carro). Propuesta: no cambiar el vehículo después de `fechaIngresoReparacion` (o nunca); solo corregir el cliente.
+- [ ] **E4 — El filtro JWT corre en `/api/auth/login`**: con un token vencido en la cabecera (el interceptor de axios del front siempre lo manda) el login responde 401 "El token ha expirado". Agregar `shouldNotFilter` para `RUTAS_PUBLICAS`.
+- [ ] **E5 — `ObservacionController` conserva `@CrossOrigin(origins = "*")`**, que se suma al CORS central y abre ese controlador a cualquier origen. Quitarlo.
+- [ ] **E6 — `AuthService.login` revisa `activo` antes que la contraseña**: permite saber, sin la clave, que un email existe y está inactivo. Validar la contraseña primero.
+- [ ] **E7 — Usuarios:** un ADMIN puede desactivarse a sí mismo o quitarse el rol, y se puede desactivar o degradar al último ADMIN. Todavía se acepta el rol `TECNICO` en alta/edición.
+- [ ] **E8 —** `application.properties`: el comentario de `jwt.expiration=3600` dice "2 horas" (es 1 h). Decidir el valor y corregir el comentario.
+- [ ] **E9 —** `UsuarioInactivoException` responde **403** (handler y filtro); CLAUDE.md dice 401. Unificar.
+- [x] **E10 (2026-10-26, corregido el mismo día) —** un `@RequestParam` obligatorio ausente (`GET /api/valoracion/ordenes` sin `filtro`) responde **500**: falta el handler de `MissingServletRequestParameterException` en `GlobalExceptionHandler` (→ 400).
 
-**2. Seguridad**
-- [ ] **Control por rol** según la tabla de acceso de CLAUDE.md (`hasAnyRole` en `SecurityConfig`). **Lo hace Williams (2026-10-24).**
-- [ ] CORS: bean `CorsConfigurationSource` y quitar los `@CrossOrigin("*")` de todos los controllers (ver sección 3).
+### 2.1 Contrato con el front (`grc-front`)
+El front hoy corre con mocks (`REACT_APP_USE_MOCK`); solo Técnicos y Usuarios hablan con el backend real. Al apagar el mock, estas diferencias rompen:
+- [ ] **Rutas distintas:** el front usa `/ordenes`, `/ordenes/{id}`, `/ordenes/buscar?placa=`, `/ordenes/kanban`, `/ordenes/{id}/historial`, `POST /ordenes/{id}/cambiar-etapa`, `POST /ordenes/{id}/ingreso-cotizar|ingreso-reparacion|dias-estimados`, `/vehiculos/{placa}`, `/clientes/{documento}`, `/ordenes/{id}/observaciones`, `/ordenes/{id}/fotos`, `PUT /ordenes/{id}/valoracion` (crear y editar), `POST .../valoracion/cesvi`, `/valoraciones/ordenes?filtro=`, `/valoraciones/conteo`, `/dashboard/resumen|avisos|movimientos|carga-etapas`. El backend usa `/api/orden`, `PATCH`, `/vehiculo/placa/{placa}` y `/cliente/documento/{documento}`. Decidir quién se adapta (recomendado: el front ajusta rutas y verbos a lo que ya existe; el backend agrega lo que falta).
+- [ ] **Fechas sin cuerpo:** el front marca cotizar/ingreso sin enviar fecha; el backend exige `{ "fecha": "YYYY-MM-DD" }`.
+- [ ] **Búsquedas:** el front espera `null` cuando no existe la placa o el documento; el backend responde 404. El front debe tratar el 404 como "no existe".
+- [ ] **"Vista de orden" del front** (`grc-front/src/services/README.md`) pide campos que el backend no da: `tecnicoActual`, `fechaInicioEtapa`, `diasEnEtapa`, `diasEnTaller`, `etapasVisitadas`, `asesor`, `alertas` / `alerta`, `estadoValoracion`, `vehiculoTexto` y `siniestro` (este último no existe en el modelo). El front usa `estado = 'ENTREGADA'`; el backend usa `CERRADA`. El brief del front habla de "10 etapas"; son 9 (+ Asignado y Entregado calculadas).
+- [ ] **Valoración (2026-10-26):** el front debe usar `PUT /api/orden/{id}/valoracion` para editar (crear sigue siendo `POST`), `PATCH /api/orden/{id}/valoracion/cesvi` (no `POST`), `GET /api/valoracion/ordenes?filtro=SIN_VALORAR|SIN_CARGAR|CARGADAS` (no los textos 'Sin valorar'…) y `GET /api/valoracion/conteo`, que devuelve `{ sinValorar, sinCargar, cargadas }` en vez de claves con el texto del filtro. El mock del front no filtra por estado; el backend excluye las canceladas.
+- [ ] **Formato de errores:** el front lee `data.message || data.error`. Los 400 de validación devuelven `{ campo: mensaje }` sin `error`, así que el usuario vería "Request failed with status code 400". Unificar (p. ej. `{ "error": "...", "campos": { ... } }`).
+- [ ] El interceptor del front borra la sesión ante cualquier 401; con E4 corregido, un login fallido no afecta.
+
+### 2.2 Endpoints que faltan para las pantallas
+- [ ] **Etapas de la orden** (`GET /api/orden/{id}/etapas` desde `OrdenEtapaFecha`, y/o `/historial` desde `HistorialEtapas`, cuyo repositorio está vacío): fichas verde/naranja/gris y columnas visitadas deshabilitadas en el Kanban.
+- [ ] **Campos calculados en la orden:** técnico actual, "desde", días en etapa, días en taller, asesor (último `HistorialEtapas.usuario`), alertas.
+- [ ] **Dashboard** completo: 6 tarjetas, listas por aviso, "+X ingresos hoy", movimientos de las últimas 24 h, carga por etapa.
+- [ ] **Nueva orden compuesta** en un solo `@Transactional` (las 4 combinaciones placa/documento). Hoy serían 3 llamadas (cliente → vehículo → orden) y una falla deja registros sueltos.
+- [ ] Placa repetida (también de un vehículo desactivado): mensaje claro / ofrecer reactivar (hoy 409 genérico).
+- [ ] Órdenes: ¿dos órdenes `ACTIVA` para el mismo vehículo? ¿validar que el vehículo y el cliente estén activos al crear?
+- [ ] `GET /api/auth/me` (recuperar el usuario al recargar).
+- [ ] **Control por rol** según la tabla de CLAUDE.md (`hasAnyRole`). **Lo hace Williams.** Hoy cualquier autenticado entra a todo.
+- [ ] Imágenes de Observaciones y de Valoración, PDF, ZIP y pestaña Fotografías (bloqueado por el almacenamiento de fotos).
+- [ ] Notificaciones WhatsApp `@Async` + `PlantillaMensaje`; `Modulo`/`RolModulo`.
 - [ ] Usuario semilla (`CommandLineRunner`) para cualquier base nueva.
 
-**3. Modelo y catálogos**
-- [ ] Declarar `UNIQUE(id_orden_reparacion, id_etapa)` en `OrdenEtapaFecha` (`@Table(uniqueConstraints = ...)`) — hoy solo existe en la base (ver Hallazgos).
-- [ ] Tablas `modulo` y `plantilla_mensaje` vacías.
+### 2.3 Mejoras (no bloquean)
+**Reglas de negocio**
+- [ ] Las observaciones exigen una etapa visitada: una orden en cotización o en "Asignado" no puede recibir notas. Confirmar con el taller.
+- [ ] `cambiarEtapa` no pone `ubicacionActual = EN_TALLER` (si una observación la dejó `FUERA_DE_TALLER`, la orden sigue "fuera" aunque avance; la observación del cambio sí dice `EN_TALLER`).
+- [ ] Un técnico puede cambiar de especialidad mientras tiene una etapa abierta de la especialidad anterior.
+
+**Datos y validación**
+- [ ] `Vehiculo.anio` sin rango (`@Min`/`@Max`).
+- [ ] `correo` de cliente/técnico sin `EmailUtil` (ni `trim` ni minúsculas), y un `""` se guarda vacío en vez de `NULL`.
+- [ ] Vehículo: `color` y `vin` sin `trim`; `vin` sin pasar a mayúsculas. `Usuario.nombre` sin `trim`.
+- [ ] `Vehiculo.modelo` en 10 se queda corto (`Sandero Stepway`).
+- [ ] Declarar `UNIQUE(id_orden_reparacion, id_etapa)` en `OrdenEtapaFecha` (`@Table(uniqueConstraints = ...)`) — hoy solo existe en la base (en la compartida se había perdido y se repuso como `uk_orden_etapa` el 2026-10-26).
 - [ ] `length` en `Notificaciones` (`evento_disparador`, `canal`, `contenido_enviado`, `error_detalle`); evaluar `TEXT` para `contenido_enviado` / `contenido_template`.
-- [ ] (Recomendado) `FetchType.LAZY` en las relaciones (hoy 0).
 - [ ] Igualar `ImagenObservacion.url` (255) con `ValoracionImagen.url` (2083).
-- [ ] `Modulo.codigo` en 10 queda justo para códigos como `DETALLE_OT`.
+- [ ] `Modulo.codigo` en 10 queda justo para códigos como `DETALLE_OT`. Tablas `modulo` y `plantilla_mensaje` vacías.
 
-**4. Correcciones menores en módulos hechos**
-- [ ] Placa repetida (también de un vehículo desactivado): buscar con `findByPlaca` antes y dar un mensaje claro / ofrecer reactivar (hoy 409 genérico).
-- [ ] Órdenes: ¿dos órdenes `ACTIVA` para el mismo vehículo? ¿validar vehículo/cliente activos al crear?
+**Rendimiento**
+- [ ] `FetchType.LAZY` en las relaciones (hoy 0); `OrdenReparacion.valoracion` es un `@OneToOne` inverso que se carga siempre, con una consulta extra por orden.
+- [ ] `TecnicoService.convertirADto` hace un `count` por técnico.
+- [ ] Paginación (`/entregadas` crece sin fin).
+
+**Operación / producción**
+- [ ] Flyway en vez de `ddl-auto=update` (urgente con la base compartida); `show-sql=false`; `open-in-view=false`; HTTPS con proxy; respaldos.
 - [ ] Quitar `mysql-connector-j` del `pom.xml` (ojo: el `application.properties` de test usa `MySQLDialect`).
-- [ ] Quitar el `@JsonIgnore` de `Cliente.vehiculos`.
-- [ ] Formato de los `record` de `dto/etapas` (Ctrl+Alt+L).
-- [ ] Técnicos: conteo de `OrdenEtapaFecha` abiertas por técnico (columna "En curso").
-
-**5. Módulos de negocio**
-- [x] `Etapas` (catálogo, 2026-10-20).
-- [x] Cambio de etapa, pasos 1–3 (2026-10-22, PR #9).
-- [x] Fechas del ciclo de vida (2026-10-24, rama `feature/fechas-orden`): 19 casos con curl OK en la base local.
-- [x] Entrega (2026-10-24, rama `feature/entregar-orden`): 12 casos con curl OK en la base local (ruta implementada: `PATCH /api/orden/{id}/entregar-orden`).
-- [x] `GET /api/orden/entregadas` (2026-10-24, rama `feature/entregar-orden`): `findByEstadoOrderByFechaDeEntregaRealDesc(CERRADA)`, más reciente primero. Probado. A futuro: limitar por días o paginar (la lista crece sin fin).
-- [ ] Mensaje de `validarActiva` (ya es `public` y lo usan fechas, entrega y valoración): todavía dice "solo se pueden marcar fechas en una orden activa" → cambiar a "solo se puede modificar una orden activa".
-- [ ] Sincronizar `ubicacionActual` al crear una `Observacion` con ubicación.
-- [x] Observaciones (solo texto) (2026-10-24, rama `feature/observaciones`): `POST`/`GET /api/orden/{idOrden}/observaciones` con `ObservacionesService` + `ObservacionController`. Etapa solo visitada (o `NULL` = Entrega, solo en `CERRADA`); `CANCELADA` → 409; ubicación y estado de repuestos opcionales: si viene ubicación actualiza `ubicacionActual` (si no, hereda la de la orden). 21 casos con curl OK + regresión de etapa, entrega y fechas. **Decisión de ubicación opcional tomada por la recomendación; Adrian no la contradijo.**
-- [ ] Imágenes de observaciones (bloqueado: decidir dónde se guardan las fotos).
-- [ ] **Valoración (sin fotos)** ← EN CURSO (rama `feature/valoracion`): crear y obtener hechos y probados; faltan editar, CESVI y listados (ver sección 1).
-- [ ] Fotos, PDF y ZIP de `Valoracion` (bloqueado por el almacenamiento de fotos) (la primera valoración marca `fechaIngresoCotizar` si falta; `gravedad` solo con `REPARACION`).
-- [ ] Dashboard de alertas; `Notificaciones` WhatsApp `@Async` + `PlantillaMensaje`; `Modulo`/`RolModulo`.
-- **Decisión abierta:** almacenamiento de fotos — hay propuesta (disco local + URLs firmadas, ver sección 1), falta que Adrian la confirme. Bloquea las imágenes de Observaciones y de Valoración.
-
-**6. Operación / producción**
-- [ ] Flyway en vez de `ddl-auto=update` (urgente con la base compartida); `show-sql=false`; `open-in-view=false`; paginación; HTTPS con proxy; respaldos.
+- [ ] Tests reales: solo existe `contextLoads`. Pasar los casos de curl a `MockMvc` o a una colección de Postman.
 - [ ] Llevar `develop` a `main`.
+
+**Estilo**
+- [ ] Unificar Lombok vs. accesores a mano (decisión abierta).
+- [ ] `UsuarioService` usa `Collectors.toList()` (los demás `.toList()`); `ValoracionImagen` tiene el tipo totalmente calificado en el constructor; sobra el `@JsonIgnore` de `Cliente.vehiculos`; mover `LoginRequest`/`LoginResponse` a `dto/auth`; formato de los `record` de `dto/etapas`.
+
+### Módulos de negocio terminados
+- [x] `Etapas` (catálogo, 2026-10-20).
+- [x] Cambio de etapa (2026-10-22, PR #9).
+- [x] Fechas del ciclo de vida (2026-10-24).
+- [x] Entrega `PATCH /api/orden/{id}/entregar-orden` y `GET /api/orden/entregadas` (2026-10-24).
+- [x] Observaciones (solo texto) (2026-10-24).
+- [x] Valoración crear/obtener (2026-10-24, PR #18).
+- [x] Valoración editar, CESVI, listados y conteo (2026-10-26, `feature/valoracion-editar`, sin commit).
+- [x] Usuario: `/desactivados` y `/reactivar` (`a4f7095`).
+- [x] CORS central desde `.env` (`724789a`).
+- [x] Técnicos: columna "En curso" (`25ebac7`).
+- **Decisión abierta:** almacenamiento de fotos — hay propuesta (sección 1), falta que Adrian la confirme.
 
 ---
 
@@ -102,27 +134,30 @@ Todos los DTOs son `record`; ningún controlador devuelve una entidad.
 | Módulo | Ruta | Endpoints |
 |---|---|---|
 | `Auth` | `/api/auth` | `POST /login` → `{"token": "...", "usuario": UsuarioResponseDto}` (desde `c3706c5`, del compañero) |
-| `Usuario` | `/api/usuario` | GET lista (activos, filtrados en memoria), GET `/{id}`, POST (201), PUT `/{id}`, DELETE (204, lógico). Sin `/desactivados` ni `/reactivar` |
+| `Usuario` | `/api/usuario` | GET lista (`findByActivoTrue`), GET `/desactivados`, GET `/{id}`, POST (201), PUT `/{id}`, DELETE (204, lógico), PATCH `/{id}/reactivar` |
 | `Cliente` | `/api/cliente` | POST, PUT `/{id}`, GET `/{id}`, GET `/documento/{documento}`, GET lista, GET `/desactivados`, DELETE (lógico), PATCH `/{id}/reactivar` |
 | `Tecnico` | `/api/tecnico` | GET lista, GET `/desactivados`, GET `/{id}`, GET `/especialidad/{especialidad}` (activos; valor inválido o en minúsculas → 400), POST, PUT `/{id}`, DELETE (lógico), PATCH `/{id}/reactivar` |
 | `Vehiculo` | `/api/vehiculo` | GET `/{id}`, GET `/placa/{placa}`, GET lista, GET `/desactivados`, POST, DELETE (lógico), PATCH `/{id}/reactivar`. Sin update (a propósito) |
 | `OrdenReparacion` | `/api/orden` | POST, PUT `/{id}` (solo `ACTIVA`), DELETE `/{id}` (→ `CANCELADA`), PATCH `/{id}/reactivar` (solo desde `CANCELADA`), GET `/{id}`, GET (activas), GET `/entregadas` (CERRADA, la más reciente primero), GET `/placa/{placa}`, PATCH `/{id}/etapa`, PATCH `/{id}/ingreso-cotizar`, PATCH `/{id}/ingreso-reparacion`, PATCH `/{id}/dias-estimados`, PATCH `/{id}/entregar-orden` |
 | `Etapas` | `/api/etapa` | GET lista (por `orden`), GET `/{id}`, POST, PUT `/{id}`. Sin DELETE, a propósito |
 | `Observacion` | `/api/orden/{idOrden}/observaciones` | POST (201), GET (la más reciente primero). `ObservacionesService` + `ObservacionController` |
-| `Valoracion` | `/api/orden/{idOrden}/valoracion` | POST (201), GET. **En curso:** PUT, PATCH `/cesvi`, `GET /api/valoracion/sin-valorar`, `GET /api/valoracion?cargadaCesvi=` |
+| `Valoracion` | `/api/orden/{idOrden}/valoracion` y `/api/valoracion` | POST (201), GET, PUT (200, reemplaza la hoja completa), PATCH `/cesvi` (200; 409 si ya está marcada o la orden está cancelada); `GET /api/valoracion/ordenes?filtro=SIN_VALORAR\|SIN_CARGAR\|CARGADAS` (lista de `OrdenReparacionResponseDto`), `GET /api/valoracion/conteo`. Enum `FiltroValoracion`, `ConteoValoracionResponseDto`; `OrdenReparacionService.convertirADto` es público |
+
+Sin endpoints todavía: historial/etapas de una orden, Dashboard, `/api/auth/me`, fotos, notificaciones.
 
 Infraestructura:
 - `config/SecurityConfig` + `config/JwtAuthenticationFilter` + `config/SecurityErrorWriter`, `service/JwtService`, `service/CustomUserDetailsService`.
 - `exception/`: `RecursoNoEncontradoException`, `ReglaNegocioException`, `EmailAlreadyExistsException`, `CredencialesInvalidasException`, `UsuarioInactivoException`, `GlobalExceptionHandler` (probado contra el servidor).
 - `util/`: `CelularUtil` (E.164), `DocumentoUtil` (quita espacios y puntos), `PlacaUtil` (quita espacios y guiones, mayúsculas), `EmailUtil` (`trim().toLowerCase()`).
-- Solo `OrdenReparacionService` usa `@Transactional`.
+- Usan `@Transactional`: `OrdenReparacionService`, `ValoracionService` y `ObservacionesService`. Los servicios de catálogo no lo usan.
 
 ### Seguridad
 - **JWT funcionando.** `csrf` desactivado, sesión `STATELESS`, públicas solo `/api/auth/login` y `/error`; lo demás exige `Bearer` (sin token → 401 `"No autorizado. Debes iniciar sesión."`).
 - Token: email como `subject`, `rol` como claim, expira en `jwt.expiration` (3600 s).
 - `AuthService.login`: normaliza el email, valida `activo`, compara con BCrypt; email o contraseña incorrectos → mismo 401 genérico.
 - **Falta control por rol** (cualquier autenticado entra a todo). `CustomUserDetailsService` ya carga el rol como authority.
-- Quedan 7 controladores con `@CrossOrigin(origins = "*")` (todos menos `EtapasController`; `ObservacionController` lo trae desde 2026-10-24).
+- **CORS central** (`724789a`): bean `CorsConfigurationSource` en `SecurityConfig` con los orígenes de `CORS_ALLOWED_ORIGINS` (default `http://localhost:3000`). Solo queda `@CrossOrigin("*")` en `ObservacionController` (error E5).
+- Errores de seguridad con forma `{"error": "..."}`: sin token 401, token vencido 401 "El token ha expirado", usuario inactivo 403.
 
 ### Cambio de etapa (`PATCH /api/orden/{id}/etapa`, 2026-10-22)
 - Repositorios: `OrdenEtapaFechaRepository` con `existsByOrdenReparacionIdOrdenReparacionAndEtapaIdEtapa` y `findByOrdenReparacionIdOrdenReparacionAndFechaFinIsNull` (`Optional`); `HistorialEtapasRepository` y `ObservacionRepository` vacíos.
@@ -134,7 +169,7 @@ Infraestructura:
 
 ### Detalles por módulo
 - **Cliente:** `documento` acepta 6–10 dígitos con punto o espacio entre grupos (`1.017.171.717`); se guarda solo dígitos. El guion se rechaza (en un NIT separa el dígito de verificación). Duplicado → 409, solo entre clientes. `GET /documento/{documento}` devuelve también inactivos. `ClienteUpdateDto` no trae `documento`; es PUT completo (un `correo` omitido queda `NULL`).
-- **Tecnico:** mismas reglas de documento; duplicado → 409 solo entre técnicos. `TecnicoUpdateDto` no trae `documento` ni `activo`. Formulario sin `correo` (queda `NULL`).
+- **Tecnico:** mismas reglas de documento; duplicado → 409 solo entre técnicos. `TecnicoUpdateDto` no trae `documento` ni `activo`. Formulario sin `correo` (queda `NULL`). La respuesta trae `enCurso` (`OrdenEtapaFecha` abiertas del técnico).
 - **Vehiculo:** la placa acepta espacios alrededor y un espacio o guion (`abc 123`, `ABC-123`) → se guarda `ABC123`. Placa repetida → 409 genérico del UNIQUE (también si está desactivado).
 - **Usuario:** `UsuarioRequestDto` (nombre 3–50, email, rol, password 8–60 con mayúscula, minúscula y número); `UsuarioUpdateDto` con `password` opcional (vacía = no cambiar). Nunca expone `passwordHash`. Todavía acepta el rol `TECNICO`.
 - **OrdenReparacion:** `OrdenReparacionRequestDto(idVehiculo, idCliente)`; el cliente puede ser distinto al dueño del vehículo. `OrdenReparacionResponseDto` anida vehículo y cliente, `usuarioCreador` como nombre, etapa como `idEtapaActual` + `nombreEtapaActual` (`null` = "Asignado") y todas las fechas. Se permiten dos órdenes `ACTIVA` por vehículo y no se valida que vehículo o cliente estén activos (pendiente).
@@ -203,8 +238,10 @@ Verificado contra el código el 2026-10-20.
 - Sin `length` (default 255, rompen la convención): `Notificaciones.eventoDisparador`, `canal`, `contenidoEnviado`, `errorDetalle`.
 - `Vehiculo.modelo` en 10: si es la línea completa (`Sandero Stepway`) se queda corto. Verificar contra el uso real.
 
-### Restos en la base compartida
-- `usuario.id_tecnico` (nullable, UNIQUE) con la FK `FKrysvt4lckwcbraswwmqp9paix`, sin uso. Quitar a mano: `ALTER TABLE usuario DROP FOREIGN KEY FKrysvt4lckwcbraswwmqp9paix; ALTER TABLE usuario DROP COLUMN id_tecnico;` (primero la FK). No ejecutado.
+### Esquema de la compartida (verificado 2026-10-26)
+- Coincide con el modelo (18 tablas: columnas, tipos, nulabilidad, FKs, UNIQUE e índices); arrancar la app no ejecuta ningún `alter table`.
+- 2026-10-26: se repuso `uk_orden_etapa UNIQUE(id_orden_reparacion, id_etapa)` en `orden_etapa_fecha` (se había perdido) y se eliminó `usuario.id_tecnico` con su FK y su UNIQUE.
+- `valoracion_detalle.cantidad` existe como `SMALLINT NOT NULL` sin `DEFAULT 1` (el Service siempre la llena).
 
 ---
 
@@ -214,6 +251,14 @@ Verificado contra el código el 2026-10-20.
 - MariaDB 11.8.9 en el servidor del equipo, vía Tailscale (la URL está en el `.env` de cada integrante; no se escribe aquí porque el repo es público).
 - Cuenta para probar: la cuenta ADMIN de Adrian (id 6); credenciales: pedírselas a Adrian.
 - **Datos de trabajo permanentes (no borrar):** 2 usuarios ADMIN (ids 5 y 6); 10 clientes (`idPersona` 4–13); 10 vehículos (ids 1–10; placas DTR649, ZRX903, KTZ482, HDM217, JWR905, GXL364, FQN731, LMB058, NBK112, PEW274); 10 órdenes `ACTIVA` (OT 1–10, sin etapa ni fechas); 9 técnicos (`idPersona` 14–22: 2 ARMADOR, 2 LATONERO, 1 MECANICO, 1 ALISTADOR, 2 PINTOR, 1 CONTROL_CALIDAD); las 9 etapas.
+- **Datos de prueba de Valoración (2026-10-26, Adrian pidió conservarlos):**
+
+| OT | Vehículo | Estado | Valoración |
+|---|---|---|---|
+| 11 | 1 (DTR649) | ACTIVA | 1 pieza, cargada a CESVI, editada después de marcar |
+| 12 | 2 (ZRX903) | CANCELADA | 1 pieza, sin cargar (no aparece en ningún filtro) |
+| 13 | 3 (KTZ482) | CERRADA (ingreso y entrega el 2026-10-26, con observación de entrega) | 1 pieza, cargada a CESVI |
+| 14 | 11 (PRB123, nuevo; dueño = cliente 23, nuevo) | CERRADA | Flujo completo hecho por Adrian en Postman: cliente → vehículo → orden → valoración → ingreso → días → etapas → observación → CESVI → entrega |
 
 ### Local (XAMPP, desde 2026-10-24)
 - `jdbc:mariadb://localhost:3306/gestion_reparacion_colision`, **MariaDB 10.4**, usuario `root`. En el `.env` la línea de la compartida queda comentada.
@@ -251,6 +296,8 @@ Verificado contra el código el 2026-10-20.
 - **2026-10-24 — `OrdenEtapaFecha` no declara el `UNIQUE(id_orden_reparacion, id_etapa)`**: no aparece en el DDL generado. En la compartida existe (puesto a mano) y en la local se agregó como `uk_orden_etapa`. Pendiente declararlo en la entidad.
 - **2026-10-24 — MariaDB local dañado por un cierre inesperado:** XAMPP no arrancaba ("MySQL shutdown unexpectedly"); con `mysqld --console` se vio `Can't open and lock privilege tables: Incorrect file format 'db'`. Se respaldó `data/mysql` (en el scratchpad), se restauró `mysql.db` desde `C:\xampp\mysql\backup\mysql` (solo tenía los permisos por defecto) y se repararon con `aria_chk -r` `procs_priv`, `event`, `global_priv` y `proxies_priv`. Usuarios, contraseñas y bases de datos quedaron intactos. Prevención: detener MySQL desde XAMPP antes de suspender o apagar el portátil.
 - **2026-10-24 — `target/schema-modelo.sql` acumula corridas** de `./mvnw test`; la versión vigente es la que empieza en el último `create table`.
+- **2026-10-26 — En la compartida faltaba el `UNIQUE(id_orden_reparacion, id_etapa)` de `orden_etapa_fecha`** que figuraba como puesto a mano. Repuesto como `uk_orden_etapa`. Mientras no se declare en la entidad, `ddl-auto` no lo recrea.
+- **2026-10-25 — Revisión completa de la API antes de conectar el front:** 9 errores (E1–E9, sección 2.0), diferencias de contrato con `grc-front` (sección 2.1), endpoints faltantes (2.2) y mejoras (2.3). Reporte en PDF en el Drive de Adrian (`Reporte de estado API GRC — 2026-10-25`).
 
 ---
 
@@ -341,3 +388,5 @@ Decisiones confirmadas por pantalla. Las reglas transversales (etapas, fechas, e
 - **2026-10-20:** `Etapas` con `diasLimiteCritico` y `especialidad`, capas completas y catálogo cargado (`3a62605`, PR #8). Bancada y Listo para entregar sin técnico.
 - **2026-10-22:** "Entregado" deja de ser etapa (fila id 10 borrada de la compartida) → evento `/entregar`; regla de movimiento "versión A"; cambio de etapa pasos 1–3 (`0dc66be`, PR #9 → `000afc7`).
 - **2026-10-24:** BD local en XAMPP (la red de la universidad bloquea Tailscale): FKs/UNIQUE a mano y datos de prueba. Hallazgo del UNIQUE faltante en `OrdenEtapaFecha`. Se decide hacer las fechas del ciclo de vida antes de `/entregar`; Adrian las implementa y pasan 19 casos con curl. Reparación del MariaDB local. CLAUDE.md se separa en reglas (CLAUDE.md) y estado (API.md); **API.md sí se versiona** (repo público: sin contraseñas, IPs ni correos personales). Mismo día, más tarde: se repara el MariaDB local (tablas del sistema dañadas por un cierre inesperado); fechas, entrega, `GET /entregadas` y observaciones mergeados en `develop` (`8fe995b`); el login devuelve `token` + `usuario` (Williams, `c3706c5`); se borra `docs/` del repo (`5f2c7c1`); propuesta de almacenamiento de fotos; Valoración: campo `cantidad` (pedido por Adrian), crear y obtener hechos y probados en `feature/valoracion` (sin commit).
+- **2026-10-25:** revisión completa del backend y contraste con `grc-front`. API.md se pone al día con lo mergeado (Valoración crear/obtener PR #18, paridad de usuarios, CORS central, "En curso" de técnicos). Se registran los errores E1–E9, las diferencias de contrato con el front (rutas, verbos, "vista de orden", formato de errores) y la lista de endpoints que faltan. Reporte en PDF subido al Drive.
+- **2026-10-26:** Valoración: Adrian implementa editar (`PUT`, reemplazo completo), marcar CESVI (`PATCH /cesvi`), listados por filtro (`FiltroValoracion`) y conteo. Probado con curl en la compartida (OT 11–13 de prueba): editar A–E → A, B, F, G, H deja 5 piezas con ids nuevos; `createAt`/autor intactos; 404 sin valoración u orden; 409 por gravedad sin tocar las piezas; 400 con lista vacía; descripción en blanco → `null`; 409 en cancelada y cerrada; CESVI 200 → 409 al repetir, 404 sin valoración, 409 en cancelada, 200 en cerrada; editar tras CESVI conserva `cargadaCesvi`/`cargadaCesviAt`; conteo = largo de cada lista en cada paso; filtro inválido o en minúsculas → 400; **sin `filtro` → 500 (E10)**. Esquema de la compartida comparado contra el modelo: al día; se repone `uk_orden_etapa` y se elimina `usuario.id_tecnico`. Mismo día: Adrian agrega el handler de `MissingServletRequestParameterException`; sin `filtro` → 400 `"Falta el parámetro obligatorio: filtro"`.
