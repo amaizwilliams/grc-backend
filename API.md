@@ -4,7 +4,7 @@ Bitácora y estado vivo del backend: qué está hecho, qué sigue, pendientes, d
 
 Al cerrar un bloque se actualizan: "Retomar aquí", "Pendientes", "Estado de los módulos" y la "Bitácora".
 
-**Última verificación contra el código:** 2026-10-26 (Valoración completa en `feature/valoracion-editar`; esquema de la compartida comparado contra el modelo). La revisión completa anterior es del 2026-10-25.
+**Última verificación contra el código:** 2026-10-27 (historial de etapas en `feature/historial-etapas`). Antes: 2026-10-26 (Valoración completa; esquema de la compartida comparado contra el modelo). La revisión completa anterior es del 2026-10-25.
 
 ---
 
@@ -23,8 +23,9 @@ Antes de conectar el front, en este orden (detalle de cada punto en la sección 
 3. **Endpoints que faltan para las pantallas** (sección 2.2): etapas/historial de la orden, campos de Kanban y ficha, dashboard, terminar Valoración, nueva orden compuesta, `/api/auth/me`, control por rol.
 4. Mejoras no bloqueantes (sección 2.3).
 
-### Próxima sesión (dejado el 2026-10-26)
-- **Valoración terminada (salvo fotos/PDF/ZIP)** en `feature/valoracion-editar`, sin commit: editar, CESVI, listados por filtro y conteo, probados con curl en la compartida (ver bitácora). E10 corregido y probado (400). Falta: commit y PR a `develop`.
+### Próxima sesión (dejado el 2026-10-27)
+- **Historial de etapas hecho** en `feature/historial-etapas`, sin commit: `GET /api/orden/{idOrden}/historial` y campo `asesor` en `OrdenReparacionResponseDto`, probados con curl en la compartida (lecturas + cambio de etapa en vivo con datos de prueba ya borrados). Falta: commit y PR a `develop`. Pendiente de decisión: quitar la inversa `OrdenReparacion.historialEtapas` (nadie la usa).
+- Valoración editar/CESVI/listados/conteo ya está en `develop` (`39fa877`).
 - Siguiente bloque: **errores E1–E4** (sección 2.0).
 - **Edición = reemplazo completo** (decidido): el front manda **la hoja entera**; si manda solo las piezas nuevas, las demás se pierden. Las piezas que no cambian se reinsertan con id nuevo (hoy nada apunta a `valoracion_detalle`). Si algún día hace falta un id estable (p. ej. un costo por pieza), pasar a "por diferencias": `idValoracionDetalle` opcional en el DTO, validando que pertenezca a esa valoración. Caso extra de prueba: 5 piezas A–E → PUT con A, B, F, G, H → quedan 5.
 - **Propuesta de Python (sin confirmar):** las alertas del Dashboard van en Java (son consultas simples, deben ser instantáneas y reutilizan `convertirADto` y la seguridad). Los **reportes** (entregas por mes, tiempos por etapa, carga por técnico, Excel) en una carpeta `reportes/` dentro de este repo, ejecutados por Spring con `ProcessBuilder` (el front ve una sola API y un solo JWT). Requiere Python en el servidor y un usuario MySQL de solo lectura. Falta que el taller defina qué reportes quiere.
@@ -51,7 +52,7 @@ Control por rol (`hasAnyRole` en `SecurityConfig`) — ver 2.2.
 - [ ] **E2 — Cancelar deja la `OrdenEtapaFecha` abierta**: el técnico sigue contando esa orden en "En curso". Cerrarla al cancelar (y decidir qué pasa al reactivar).
 - [ ] **E3 — `updateOrden` permite cambiar el vehículo** de una orden con etapas, valoración y observaciones (el historial queda en otro carro). Propuesta: no cambiar el vehículo después de `fechaIngresoReparacion` (o nunca); solo corregir el cliente.
 - [ ] **E4 — El filtro JWT corre en `/api/auth/login`**: con un token vencido en la cabecera (el interceptor de axios del front siempre lo manda) el login responde 401 "El token ha expirado". Agregar `shouldNotFilter` para `RUTAS_PUBLICAS`.
-- [ ] **E5 — `ObservacionController` conserva `@CrossOrigin(origins = "*")`**, que se suma al CORS central y abre ese controlador a cualquier origen. Quitarlo.
+- [x] **E5 (corregido 2026-10-27, `feature/historial-etapas`) — `ObservacionController` conservaba `@CrossOrigin(origins = "*")`**, que se suma al CORS central y abre ese controlador a cualquier origen. Quitarlo.
 - [ ] **E6 — `AuthService.login` revisa `activo` antes que la contraseña**: permite saber, sin la clave, que un email existe y está inactivo. Validar la contraseña primero.
 - [ ] **E7 — Usuarios:** un ADMIN puede desactivarse a sí mismo o quitarse el rol, y se puede desactivar o degradar al último ADMIN. Todavía se acepta el rol `TECNICO` en alta/edición.
 - [ ] **E8 —** `application.properties`: el comentario de `jwt.expiration=3600` dice "2 horas" (es 1 h). Decidir el valor y corregir el comentario.
@@ -69,8 +70,9 @@ El front hoy corre con mocks (`REACT_APP_USE_MOCK`); solo Técnicos y Usuarios h
 - [ ] El interceptor del front borra la sesión ante cualquier 401; con E4 corregido, un login fallido no afecta.
 
 ### 2.2 Endpoints que faltan para las pantallas
-- [ ] **Etapas de la orden** (`GET /api/orden/{id}/etapas` desde `OrdenEtapaFecha`, y/o `/historial` desde `HistorialEtapas`, cuyo repositorio está vacío): fichas verde/naranja/gris y columnas visitadas deshabilitadas en el Kanban.
-- [ ] **Campos calculados en la orden:** técnico actual, "desde", días en etapa, días en taller, asesor (último `HistorialEtapas.usuario`), alertas.
+- [x] **Historial de la orden** (2026-10-27): `GET /api/orden/{idOrden}/historial` desde `HistorialEtapas`.
+- [ ] **Etapas de la orden** (`GET /api/orden/{id}/etapas` desde `OrdenEtapaFecha`): fichas verde/naranja/gris y columnas visitadas deshabilitadas en el Kanban.
+- [ ] **Campos calculados en la orden:** técnico actual, "desde", días en etapa, días en taller, alertas. (`asesor` hecho el 2026-10-27.)
 - [ ] **Dashboard** completo: 6 tarjetas, listas por aviso, "+X ingresos hoy", movimientos de las últimas 24 h, carga por etapa.
 - [ ] **Nueva orden compuesta** en un solo `@Transactional` (las 4 combinaciones placa/documento). Hoy serían 3 llamadas (cliente → vehículo → orden) y una falla deja registros sueltos.
 - [ ] Placa repetida (también de un vehículo desactivado): mensaje claro / ofrecer reactivar (hoy 409 genérico).
@@ -99,7 +101,7 @@ El front hoy corre con mocks (`REACT_APP_USE_MOCK`); solo Técnicos y Usuarios h
 
 **Rendimiento**
 - [ ] `FetchType.LAZY` en las relaciones (hoy 0); `OrdenReparacion.valoracion` es un `@OneToOne` inverso que se carga siempre, con una consulta extra por orden.
-- [ ] `TecnicoService.convertirADto` hace un `count` por técnico.
+- [ ] `TecnicoService.convertirADto` hace un `count` por técnico; `OrdenReparacionService.convertirADto` hace una consulta por orden para el `asesor` (afecta todas las listas de órdenes).
 - [ ] Paginación (`/entregadas` crece sin fin).
 
 **Operación / producción**
@@ -110,6 +112,7 @@ El front hoy corre con mocks (`REACT_APP_USE_MOCK`); solo Técnicos y Usuarios h
 
 **Estilo**
 - [ ] Unificar Lombok vs. accesores a mano (decisión abierta).
+- [ ] **Quitar `OrdenReparacion.historialEtapas`** (`@OneToMany` inverso): desde 2026-10-27 el historial y el `asesor` se leen por `HistorialEtapasRepository` y nadie llama a `getHistorialEtapas()`. CLAUDE.md: inversas solo si se navegan. Sin cambio en la base (el lado inverso no tiene columna). Revisar también `ordenEtapaFechas`.
 - [ ] `UsuarioService` usa `Collectors.toList()` (los demás `.toList()`); `ValoracionImagen` tiene el tipo totalmente calificado en el constructor; sobra el `@JsonIgnore` de `Cliente.vehiculos`; mover `LoginRequest`/`LoginResponse` a `dto/auth`; formato de los `record` de `dto/etapas`.
 
 ### Módulos de negocio terminados
@@ -119,7 +122,8 @@ El front hoy corre con mocks (`REACT_APP_USE_MOCK`); solo Técnicos y Usuarios h
 - [x] Entrega `PATCH /api/orden/{id}/entregar-orden` y `GET /api/orden/entregadas` (2026-10-24).
 - [x] Observaciones (solo texto) (2026-10-24).
 - [x] Valoración crear/obtener (2026-10-24, PR #18).
-- [x] Valoración editar, CESVI, listados y conteo (2026-10-26, `feature/valoracion-editar`, sin commit).
+- [x] Valoración editar, CESVI, listados y conteo (2026-10-26, `39fa877`).
+- [x] Historial de etapas + `asesor` en la orden (2026-10-27, `feature/historial-etapas`, sin commit).
 - [x] Usuario: `/desactivados` y `/reactivar` (`a4f7095`).
 - [x] CORS central desde `.env` (`724789a`).
 - [x] Técnicos: columna "En curso" (`25ebac7`).
@@ -142,14 +146,15 @@ Todos los DTOs son `record`; ningún controlador devuelve una entidad.
 | `Etapas` | `/api/etapa` | GET lista (por `orden`), GET `/{id}`, POST, PUT `/{id}`. Sin DELETE, a propósito |
 | `Observacion` | `/api/orden/{idOrden}/observaciones` | POST (201), GET (la más reciente primero). `ObservacionesService` + `ObservacionController` |
 | `Valoracion` | `/api/orden/{idOrden}/valoracion` y `/api/valoracion` | POST (201), GET, PUT (200, reemplaza la hoja completa), PATCH `/cesvi` (200; 409 si ya está marcada o la orden está cancelada); `GET /api/valoracion/ordenes?filtro=SIN_VALORAR\|SIN_CARGAR\|CARGADAS` (lista de `OrdenReparacionResponseDto`), `GET /api/valoracion/conteo`. Enum `FiltroValoracion`, `ConteoValoracionResponseDto`; `OrdenReparacionService.convertirADto` es público |
+| `HistorialEtapas` | `/api/orden/{idOrden}/historial` | GET (cronológico, el más antiguo primero; `[]` si nunca cambió de etapa; 404 si la orden no existe). Solo lectura: las filas las escribe `cambiarEtapa`. `HistorialEtapasService` + `HistorialEtapasController`, `HistorialEtapasResponseDto(idHistorialEtapas, idOrdenReparacion, idEtapa, nombreEtapa, usuario, fechaCambio)` |
 
-Sin endpoints todavía: historial/etapas de una orden, Dashboard, `/api/auth/me`, fotos, notificaciones.
+Sin endpoints todavía: etapas de una orden (`OrdenEtapaFecha`), Dashboard, `/api/auth/me`, fotos, notificaciones.
 
 Infraestructura:
 - `config/SecurityConfig` + `config/JwtAuthenticationFilter` + `config/SecurityErrorWriter`, `service/JwtService`, `service/CustomUserDetailsService`.
 - `exception/`: `RecursoNoEncontradoException`, `ReglaNegocioException`, `EmailAlreadyExistsException`, `CredencialesInvalidasException`, `UsuarioInactivoException`, `GlobalExceptionHandler` (probado contra el servidor).
 - `util/`: `CelularUtil` (E.164), `DocumentoUtil` (quita espacios y puntos), `PlacaUtil` (quita espacios y guiones, mayúsculas), `EmailUtil` (`trim().toLowerCase()`).
-- Usan `@Transactional`: `OrdenReparacionService`, `ValoracionService` y `ObservacionesService`. Los servicios de catálogo no lo usan.
+- Usan `@Transactional`: `OrdenReparacionService`, `ValoracionService`, `ObservacionesService` y `HistorialEtapasService`. Los servicios de catálogo no lo usan.
 
 ### Seguridad
 - **JWT funcionando.** `csrf` desactivado, sesión `STATELESS`, públicas solo `/api/auth/login` y `/error`; lo demás exige `Bearer` (sin token → 401 `"No autorizado. Debes iniciar sesión."`).
@@ -160,7 +165,7 @@ Infraestructura:
 - Errores de seguridad con forma `{"error": "..."}`: sin token 401, token vencido 401 "El token ha expirado", usuario inactivo 403.
 
 ### Cambio de etapa (`PATCH /api/orden/{id}/etapa`, 2026-10-22)
-- Repositorios: `OrdenEtapaFechaRepository` con `existsByOrdenReparacionIdOrdenReparacionAndEtapaIdEtapa` y `findByOrdenReparacionIdOrdenReparacionAndFechaFinIsNull` (`Optional`); `HistorialEtapasRepository` y `ObservacionRepository` vacíos.
+- Repositorios: `OrdenEtapaFechaRepository` con `existsByOrdenReparacionIdOrdenReparacionAndEtapaIdEtapa` y `findByOrdenReparacionIdOrdenReparacionAndFechaFinIsNull` (`Optional`); `HistorialEtapasRepository` con `findByOrdenReparacionIdOrdenReparacionOrderByFechaCambioAsc` (historial) y `findFirstBy...OrderByFechaCambioDesc` (`Optional`, asesor), desde 2026-10-27.
 - `CambioEtapaRequestDto(idEtapaDestino @NotNull, idTecnico, nota @Size(max=500), visibleCliente)`.
 - `OrdenReparacionService.cambiarEtapa`: bloque A de validaciones (orden 404, `ACTIVA` 409, `fechaIngresoReparacion` 409, etapa 404, ya visitada 409, técnico sobra/falta/inactivo/especialidad 409, inexistente 404) y bloque B de escrituras con un solo `ahora`. Observación solo si la nota no está en blanco, con `visibleCliente = Boolean.TRUE.equals(...)`.
 - Probado con curl (18 casos) en la compartida: `fechaFin` de cada etapa = `fechaInicio` de la siguiente, una sola etapa abierta, nota con `trim`. Volver a una etapa saltada (Pintura → Bancada) → 200.
@@ -172,7 +177,7 @@ Infraestructura:
 - **Tecnico:** mismas reglas de documento; duplicado → 409 solo entre técnicos. `TecnicoUpdateDto` no trae `documento` ni `activo`. Formulario sin `correo` (queda `NULL`). La respuesta trae `enCurso` (`OrdenEtapaFecha` abiertas del técnico).
 - **Vehiculo:** la placa acepta espacios alrededor y un espacio o guion (`abc 123`, `ABC-123`) → se guarda `ABC123`. Placa repetida → 409 genérico del UNIQUE (también si está desactivado).
 - **Usuario:** `UsuarioRequestDto` (nombre 3–50, email, rol, password 8–60 con mayúscula, minúscula y número); `UsuarioUpdateDto` con `password` opcional (vacía = no cambiar). Nunca expone `passwordHash`. Todavía acepta el rol `TECNICO`.
-- **OrdenReparacion:** `OrdenReparacionRequestDto(idVehiculo, idCliente)`; el cliente puede ser distinto al dueño del vehículo. `OrdenReparacionResponseDto` anida vehículo y cliente, `usuarioCreador` como nombre, etapa como `idEtapaActual` + `nombreEtapaActual` (`null` = "Asignado") y todas las fechas. Se permiten dos órdenes `ACTIVA` por vehículo y no se valida que vehículo o cliente estén activos (pendiente).
+- **OrdenReparacion:** `OrdenReparacionRequestDto(idVehiculo, idCliente)`; el cliente puede ser distinto al dueño del vehículo. `OrdenReparacionResponseDto` anida vehículo y cliente, `usuarioCreador` como nombre, `asesor` (nombre del último `HistorialEtapas.usuario`; `null` si nunca cambió de etapa), etapa como `idEtapaActual` + `nombreEtapaActual` (`null` = "Asignado") y todas las fechas. Se permiten dos órdenes `ACTIVA` por vehículo y no se valida que vehículo o cliente estén activos (pendiente).
 - **Etapas:** nombre (ignorando mayúsculas y espacios) y orden únicos → 409 en alta y edición (`...AndIdEtapaNot`). Para intercambiar dos etapas hay que pasar por una posición libre.
 
 ---
@@ -390,3 +395,4 @@ Decisiones confirmadas por pantalla. Las reglas transversales (etapas, fechas, e
 - **2026-10-24:** BD local en XAMPP (la red de la universidad bloquea Tailscale): FKs/UNIQUE a mano y datos de prueba. Hallazgo del UNIQUE faltante en `OrdenEtapaFecha`. Se decide hacer las fechas del ciclo de vida antes de `/entregar`; Adrian las implementa y pasan 19 casos con curl. Reparación del MariaDB local. CLAUDE.md se separa en reglas (CLAUDE.md) y estado (API.md); **API.md sí se versiona** (repo público: sin contraseñas, IPs ni correos personales). Mismo día, más tarde: se repara el MariaDB local (tablas del sistema dañadas por un cierre inesperado); fechas, entrega, `GET /entregadas` y observaciones mergeados en `develop` (`8fe995b`); el login devuelve `token` + `usuario` (Williams, `c3706c5`); se borra `docs/` del repo (`5f2c7c1`); propuesta de almacenamiento de fotos; Valoración: campo `cantidad` (pedido por Adrian), crear y obtener hechos y probados en `feature/valoracion` (sin commit).
 - **2026-10-25:** revisión completa del backend y contraste con `grc-front`. API.md se pone al día con lo mergeado (Valoración crear/obtener PR #18, paridad de usuarios, CORS central, "En curso" de técnicos). Se registran los errores E1–E9, las diferencias de contrato con el front (rutas, verbos, "vista de orden", formato de errores) y la lista de endpoints que faltan. Reporte en PDF subido al Drive.
 - **2026-10-26:** Valoración: Adrian implementa editar (`PUT`, reemplazo completo), marcar CESVI (`PATCH /cesvi`), listados por filtro (`FiltroValoracion`) y conteo. Probado con curl en la compartida (OT 11–13 de prueba): editar A–E → A, B, F, G, H deja 5 piezas con ids nuevos; `createAt`/autor intactos; 404 sin valoración u orden; 409 por gravedad sin tocar las piezas; 400 con lista vacía; descripción en blanco → `null`; 409 en cancelada y cerrada; CESVI 200 → 409 al repetir, 404 sin valoración, 409 en cancelada, 200 en cerrada; editar tras CESVI conserva `cargadaCesvi`/`cargadaCesviAt`; conteo = largo de cada lista en cada paso; filtro inválido o en minúsculas → 400; **sin `filtro` → 500 (E10)**. Esquema de la compartida comparado contra el modelo: al día; se repone `uk_orden_etapa` y se elimina `usuario.id_tecnico`. Mismo día: Adrian agrega el handler de `MissingServletRequestParameterException`; sin `filtro` → 400 `"Falta el parámetro obligatorio: filtro"`.
+- **2026-10-27:** historial de etapas (`feature/historial-etapas`): Adrian hace el repositorio, el DTO y el Service; Claude completa el Service, agrega `asesor` a `OrdenReparacionResponseDto` (después de `usuarioCreador`) y escribe `HistorialEtapasController`. Probado con curl en la compartida, solo lecturas: sin token 401; OT 14 → 8 cambios en orden cronológico (salta Electromecánica); OT 1 → `[]` y `asesor: null`; OT 99999 → 404; `abc` → 400; OT 13 (entregada sin etapas) → `[]`; `asesor` presente en `/api/orden` y `/entregadas`. Prueba en vivo con permiso de Adrian (usuario ASESOR 7, cliente 24, vehículo 12 `ZZZ999`, OT 15, todos borrados al terminar): sin cambios → `[]` y `asesor: null`; el ASESOR mueve a Bancada → 1 fila y `asesor` = el ASESOR con `usuarioCreador` = Adrian (campos no cruzados); Adrian mueve a Pintura → 2 filas en orden y `asesor` = Adrian. E5 corregido por Adrian (sin `@CrossOrigin` en `ObservacionController`).
