@@ -10,6 +10,7 @@ import gestion.reparabilidad.colision.util.PlacaUtil;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class VehiculoService {
@@ -48,6 +49,10 @@ public class VehiculoService {
                 .map(this::convertirADto)
                 .orElseThrow(() -> new RecursoNoEncontradoException(
                         "No existe el vehículo con placa " + placaNormalizada));
+    }
+
+    public Optional<Vehiculo> buscarVehiculoPorPlaca(String placa) {
+        return vehiculoRepository.findByPlaca(PlacaUtil.normalizar(placa));
     }
 
     public List<VehiculoResponseDto> getAllVehiculo() {

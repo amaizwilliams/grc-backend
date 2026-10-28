@@ -1,6 +1,10 @@
 package gestion.reparabilidad.colision.service;
 
 import gestion.reparabilidad.colision.dto.ordenReparacion.*;
+import gestion.reparabilidad.colision.dto.cliente.ClienteRequestDto;
+import gestion.reparabilidad.colision.dto.cliente.ClienteResponseDto;
+import gestion.reparabilidad.colision.dto.vehiculo.VehiculoRequestDto;
+import gestion.reparabilidad.colision.dto.vehiculo.VehiculoResponseDto;
 import gestion.reparabilidad.colision.exception.RecursoNoEncontradoException;
 import gestion.reparabilidad.colision.exception.ReglaNegocioException;
 import gestion.reparabilidad.colision.modelo.*;
@@ -51,6 +55,53 @@ public class OrdenReparacionService {
         orden.setVehiculo(vehiculo);
         orden.setCliente(cliente);
         orden.setUsuarioCreador(creador);
+        orden.setEstado(Estado.ACTIVA);
+        orden.setCreateAt(LocalDateTime.now());
+        return convertirADto(ordenReparacionRepository.save(orden));
+    }
+
+    @Transactional
+    public OrdenReparacionResponseDto crearOrdenNueva(NuevaOrdenRequestDto request) {
+        String placa = PlacaUtil.normalizar(request.placa());
+
+        // 1. Resolver el cliente: por id, por datos nuevos (buscar o crear) o null si el vehículo ya existe.
+        Cliente cliente = null;
+        if (request.idCliente() != null) {
+            cliente = clienteService.buscarCliente(request.idCliente());
+        } else if (request.cliente() != null) {
+            NuevaOrdenRequestDto.ClienteNuevoDto datos = request.cliente();
+            cliente = clienteService.buscarClientePorDocumento(datos.documento())
+                    .orElseGet(() -> {
+                        ClienteResponseDto creado = clienteService.saveCliente(new ClienteRequestDto(
+                                datos.documento(), datos.nombreCompleto(), datos.celular(), datos.correo()));
+                        return clienteService.buscarCliente(creado.idPersona());
+                    });
+        }
+
+        // 2. Resolver el vehículo: existente por placa o crear con los datos nuevos.
+        Vehiculo vehiculo = vehiculoService.buscarVehiculoPorPlaca(placa).orElse(null);
+        if (vehiculo == null) {
+            if (request.vehiculo() == null) {
+                throw new ReglaNegocioException("No existe el vehículo con placa " + placa + " y no se enviaron sus datos");
+            }
+            if (cliente == null) {
+                throw new ReglaNegocioException("Se requiere el cliente para registrar un vehículo nuevo");
+            }
+            NuevaOrdenRequestDto.VehiculoNuevoDto datos = request.vehiculo();
+            VehiculoResponseDto creado = vehiculoService.saveVehiculo(new VehiculoRequestDto(
+                    cliente.getIdPersona(), placa, datos.marca(), datos.modelo(),
+                    datos.anio(), datos.color(), datos.vin()));
+            vehiculo = vehiculoService.buscarVehiculo(creado.idVehiculo());
+        } else if (cliente == null) {
+            // El vehículo ya existe y no se indicó otro cliente: se usa el propietario registrado.
+            cliente = vehiculo.getCliente();
+        }
+
+        // 3. Crear la orden.
+        OrdenReparacion orden = new OrdenReparacion();
+        orden.setVehiculo(vehiculo);
+        orden.setCliente(cliente);
+        orden.setUsuarioCreador(buscarUsuarioAutenticado());
         orden.setEstado(Estado.ACTIVA);
         orden.setCreateAt(LocalDateTime.now());
         return convertirADto(ordenReparacionRepository.save(orden));

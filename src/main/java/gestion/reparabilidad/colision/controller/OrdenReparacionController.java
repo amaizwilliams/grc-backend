@@ -25,6 +25,12 @@ public class OrdenReparacionController {
                 .body(ordenReparacionService.saveOrden(request));
     }
 
+    @PostMapping("/nueva")
+    public ResponseEntity<OrdenReparacionResponseDto> crearOrdenNueva(@Valid @RequestBody NuevaOrdenRequestDto request) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ordenReparacionService.crearOrdenNueva(request));
+    }
+
     @PatchMapping("/{id}/ingreso-cotizar")
     public ResponseEntity<OrdenReparacionResponseDto> marcarFechaCotizar(@PathVariable Long id, @Valid @RequestBody FechaRequestDto request) {
         return ResponseEntity.ok(ordenReparacionService.marcarIngresoCotizar(id, request));

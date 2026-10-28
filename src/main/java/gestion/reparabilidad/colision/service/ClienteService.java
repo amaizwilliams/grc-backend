@@ -10,6 +10,7 @@ import gestion.reparabilidad.colision.util.DocumentoUtil;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import gestion.reparabilidad.colision.exception.RecursoNoEncontradoException;
 
@@ -55,6 +56,10 @@ public class ClienteService {
         return clienteRepository.findByDocumento(documentoNormalizado)
                 .map(this::convertirADto)
                 .orElseThrow(()-> new RecursoNoEncontradoException("No hay clientes registrados con este documento: "+documentoNormalizado));
+    }
+
+    public Optional<Cliente> buscarClientePorDocumento(String documento) {
+        return clienteRepository.findByDocumento(DocumentoUtil.normalizar(documento));
     }
 
     public List<ClienteResponseDto> getAllCliente() {
