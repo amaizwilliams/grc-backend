@@ -302,6 +302,10 @@ public class OrdenReparacionService {
                 vehiculoService.convertirADto(ordenReparacion.getVehiculo()),
                 clienteService.convertirADto(ordenReparacion.getCliente()),
                 ordenReparacion.getUsuarioCreador().getNombre(),
+                historialEtapasRepository
+                        .findFirstByOrdenReparacionIdOrdenReparacionOrderByFechaCambioDesc(ordenReparacion.getIdOrdenReparacion())
+                        .map(historial -> historial.getUsuario().getNombre())
+                        .orElse(null),
                 etapa == null ? null : etapa.getIdEtapa(),
                 etapa == null ? null : etapa.getNombre(),
                 ordenReparacion.getEstado(),

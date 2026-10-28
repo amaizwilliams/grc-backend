@@ -13,6 +13,7 @@ public record OrdenReparacionResponseDto(
                 VehiculoResponseDto vehiculo,
                 ClienteResponseDto cliente,
                 String usuarioCreador,          // el nombre, NUNCA la entidad Usuario (tiene passwordHash)
+                String asesor,                  // último HistorialEtapas.usuario; null = nunca cambió de etapa
                 Long idEtapaActual,             // null = "Asignado"
                 String nombreEtapaActual,
                 Estado estado,

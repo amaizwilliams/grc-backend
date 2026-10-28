@@ -12,7 +12,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/orden/{idOrden}/observaciones")
-@CrossOrigin(origins = "*")
 public class ObservacionController {
     private final ObservacionesService observacionesService;
 
