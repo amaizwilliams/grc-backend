@@ -112,7 +112,7 @@ El front hoy corre con mocks (`REACT_APP_USE_MOCK`); solo Técnicos y Usuarios h
 
 **Estilo**
 - [ ] Unificar Lombok vs. accesores a mano (decisión abierta).
-- [ ] **Quitar `OrdenReparacion.historialEtapas`** (`@OneToMany` inverso): desde 2026-10-27 el historial y el `asesor` se leen por `HistorialEtapasRepository` y nadie llama a `getHistorialEtapas()`. CLAUDE.md: inversas solo si se navegan. Sin cambio en la base (el lado inverso no tiene columna). Revisar también `ordenEtapaFechas`.
+- [ ] **Quitar `OrdenReparacion.historialEtapas`** (`@OneToMany` inverso): desde 2026-10-27 el historial y el `asesor` se leen por `HistorialEtapasRepository` y nadie llama a `getHistorialEtapas()`. CLAUDE.md: inversas solo si se navegan. Sin cambio en la base (el lado inverso no tiene columna). `OrdenReparacion.ordenEtapaFechas` está igual (nadie llama a `getOrdenEtapaFechas()`): decidir las dos juntas.
 - [ ] `UsuarioService` usa `Collectors.toList()` (los demás `.toList()`); `ValoracionImagen` tiene el tipo totalmente calificado en el constructor; sobra el `@JsonIgnore` de `Cliente.vehiculos`; mover `LoginRequest`/`LoginResponse` a `dto/auth`; formato de los `record` de `dto/etapas`.
 
 ### Módulos de negocio terminados
