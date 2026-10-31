@@ -41,6 +41,9 @@ public class ValoracionService {
             if (detalle.accion() == Accion.REPARACION && detalle.gravedad() == null) {
                 throw new ReglaNegocioException("La pieza " + detalle.pieza() + " es una reparación: indique la gravedad");
             }
+            if (detalle.accion() == Accion.PINTAR && detalle.gravedad() == null) {
+                throw new ReglaNegocioException("La pieza " + detalle.pieza() + " es una reparación de pintura: indique la gravedad");
+            }
             if (detalle.accion() == Accion.SUSTITUCION && detalle.gravedad() != null) {
                 throw new ReglaNegocioException("La pieza " + detalle.pieza() + " es una sustitución: no lleva gravedad");
             }
@@ -108,9 +111,9 @@ public class ValoracionService {
     }
 
     private ValoracionResponseDto convertirADto(Valoracion valoracion, List<ValoracionDetalle> detalles) {
-        // SUSTITUCION arriba, REPARACION abajo; dentro de cada grupo, alfabético por pieza
+        // orden del enum Accion (SUSTITUCION, REPARACION, PINTAR); dentro de cada grupo, alfabético por pieza
         List<ValoracionDetalleResponseDto> detallesDto = detalles.stream()
-                .sorted(Comparator.comparing((ValoracionDetalle d) -> d.getAccion() != Accion.SUSTITUCION)
+                .sorted(Comparator.comparing(ValoracionDetalle::getAccion)
                         .thenComparing(d -> d.getPieza().toLowerCase()))
                 .map(this::convertirDetalleADto)
                 .toList();
