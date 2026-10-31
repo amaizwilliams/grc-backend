@@ -5,6 +5,7 @@ import gestion.reparabilidad.colision.modelo.OrdenEtapaFecha;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 
@@ -15,5 +16,7 @@ public interface OrdenEtapaFechaRepository extends JpaRepository<OrdenEtapaFecha
     boolean existsByOrdenReparacionIdOrdenReparacionAndEtapaIdEtapa(Long idOrden, Long idEtapa);
 
     long countByTecnicoIdPersonaAndFechaFinIsNull(Long idTecnico);
+
+    List<OrdenEtapaFecha> findByOrdenReparacionIdOrdenReparacionOrderByFechaInicioAsc(Long idOrden);
 
 }
