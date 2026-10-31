@@ -9,10 +9,10 @@ public record ValoracionDetalleRequestDto(
         @Size(max = 255, message = "El nombre de la pieza no puede superar 255 caracteres")
         String pieza,
 
-        @NotNull(message = "La acción es obligatoria (REPARACION o SUSTITUCION)")
+        @NotNull(message = "La acción es obligatoria (SUSTITUCION, REPARACION o PINTAR)")
         Accion accion,
 
-        Gravedad gravedad,// obligatoria con REPARACION, null con SUSTITUCION (se valida en el Service)
+        Gravedad gravedad,                  // obligatoria con REPARACION o PINTAR, null con SUSTITUCION (se valida en el Service)
 
         @Min(value = 1, message = "La cantidad debe ser al menos 1")
         @Max(value = 999, message = "La cantidad no puede superar 999")
